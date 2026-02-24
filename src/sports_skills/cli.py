@@ -391,7 +391,7 @@ def _load_module(name):
                 raise ImportError
             return f1
         except ImportError:
-            _cli_error(
+            raise ImportError(
                 "F1 module requires extra dependencies. Install with: pip install sports-skills[f1]"
             )
     elif name == "nfl":
@@ -428,7 +428,7 @@ def _load_module(name):
         from sports_skills import golf
         return golf
     else:
-        _cli_error(f"Unknown module '{name}'. Available: {', '.join(_REGISTRY.keys())}")
+        raise ValueError(f"Unknown module '{name}'. Available: {', '.join(_REGISTRY.keys())}")
 
 
 def _parse_value(key, value):
@@ -442,6 +442,121 @@ def _parse_value(key, value):
     if key in _LIST_PARAMS:
         return [v.strip() for v in value.split(",")]
     return value
+
+
+def _parse_docstring_args(docstring):
+    """Parse Google-style docstring Args section into a dict of {param: description}."""
+    if not docstring:
+        return {}
+    lines = docstring.strip().split("\n")
+    args = {}
+    in_args = False
+    current_param = None
+    current_desc = []
+
+    for line in lines:
+        stripped = line.strip()
+        # Detect start of Args section
+        if stripped == "Args:":
+            in_args = True
+            continue
+        if not in_args:
+            continue
+        # End of Args section: a new section header (word followed by colon at base indent)
+        if stripped and not stripped.startswith(" ") and stripped.endswith(":") and stripped != "Args:":
+            break
+        # Empty line inside Args can end the section if we already have params
+        if not stripped:
+            if current_param:
+                args[current_param] = " ".join(current_desc).strip()
+                current_param = None
+                current_desc = []
+            continue
+        # New parameter line: "param_name: description" or "param_name (type): description"
+        if ":" in stripped and not stripped[0].isspace():
+            # Save previous param
+            if current_param:
+                args[current_param] = " ".join(current_desc).strip()
+            param_part, _, desc_part = stripped.partition(":")
+            # Handle "param_name (type)" format
+            param_name = param_part.split("(")[0].strip()
+            current_param = param_name
+            current_desc = [desc_part.strip()] if desc_part.strip() else []
+        elif current_param:
+            # Continuation line for current parameter
+            current_desc.append(stripped)
+
+    # Save last param
+    if current_param:
+        args[current_param] = " ".join(current_desc).strip()
+
+    return args
+
+
+def _param_type(name):
+    """Return JSON Schema type string for a parameter based on known sets."""
+    if name in _BOOL_PARAMS:
+        return "boolean"
+    if name in _INT_PARAMS:
+        return "integer"
+    if name in _LIST_PARAMS:
+        return "array"
+    return "string"
+
+
+def _generate_schema(module_name):
+    """Generate Anthropic-compatible tool schema for a module.
+
+    Reads the _REGISTRY for command definitions and attempts to load the
+    module to extract docstrings from the actual functions.
+    """
+    commands = _REGISTRY[module_name]
+
+    # Try loading the module to get function docstrings and param descriptions
+    func_docs = {}
+    param_docs = {}
+    try:
+        module = _load_module(module_name)
+        for cmd_name in commands:
+            func = getattr(module, cmd_name, None)
+            if func and func.__doc__:
+                # Use the first line of the docstring as description
+                func_docs[cmd_name] = func.__doc__.strip().split("\n")[0]
+                # Parse Args section for parameter descriptions
+                param_docs[cmd_name] = _parse_docstring_args(func.__doc__)
+    except ImportError:
+        pass
+
+    tools = []
+    for cmd_name, cmd_info in commands.items():
+        required = cmd_info.get("required", [])
+        optional = cmd_info.get("optional", [])
+        cmd_param_docs = param_docs.get(cmd_name, {})
+
+        properties = {}
+        for param in required + optional:
+            ptype = _param_type(param)
+            prop = {"type": ptype}
+            if ptype == "array":
+                prop["items"] = {"type": "string"}
+            if param in cmd_param_docs:
+                prop["description"] = cmd_param_docs[param]
+            properties[param] = prop
+
+        tool = {
+            "name": f"{module_name}_{cmd_name}",
+            "description": func_docs.get(
+                cmd_name, f"{cmd_name} command for {module_name}"
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": properties,
+                "required": required,
+            },
+        }
+        tools.append(tool)
+
+    return {"sport": module_name, "tools": tools}
 
 
 def main():
@@ -489,6 +604,16 @@ def main():
             print(f"  {cmd_name} {' '.join(parts)}")
         return
 
+    # Reserved "schema" command: generate Anthropic tool schema
+    if args.command == "schema":
+        if args.module not in _REGISTRY:
+            _cli_error(
+                f"Unknown module '{args.module}'. Available: {', '.join(_REGISTRY.keys())}"
+            )
+        schema = _generate_schema(args.module)
+        print(json.dumps(schema, indent=2))
+        return
+
     module_name = args.module
     command_name = args.command
 
@@ -526,7 +651,10 @@ def main():
         )
 
     # Load module and call function
-    module = _load_module(module_name)
+    try:
+        module = _load_module(module_name)
+    except (ImportError, ValueError) as e:
+        _cli_error(str(e))
     func = getattr(module, command_name, None)
     if not func:
         _cli_error(f"Function '{command_name}' not found in module '{module_name}'")
