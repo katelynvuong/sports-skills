@@ -1200,6 +1200,7 @@ class TestCliOptionalDependencyErrors:
 
     def test_cli_error_includes_optional_dependency_fields(self, capsys):
         import json
+
         import pytest
 
         from sports_skills.cli import _cli_error
@@ -1225,8 +1226,8 @@ class TestCliOptionalDependencyErrors:
 
     def test_load_module_f1_raises_structured_optional_dependency(self, monkeypatch):
         import pytest
-        import sports_skills
 
+        import sports_skills
         from sports_skills.cli import OptionalDependencyError, _load_module
 
         monkeypatch.setattr(sports_skills, "f1", None, raising=False)

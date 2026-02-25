@@ -47,7 +47,7 @@ _REGISTRY = {
             "required": ["season_id"],
             "optional": ["tm_player_ids"],
         },
-        "get_player_profile": {"optional": ["fpl_id", "tm_player_id"]},
+        "get_player_profile": {"optional": ["player_id", "fpl_id", "tm_player_id"]},
         "get_player_season_stats": {"required": ["player_id"], "optional": ["league_slug"]},
     },
     "polymarket": {

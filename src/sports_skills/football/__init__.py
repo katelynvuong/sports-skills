@@ -204,15 +204,18 @@ def get_season_transfers(
 
 
 def get_player_profile(
-    *, fpl_id: str | None = None, tm_player_id: str | None = None
+    *, player_id: str | None = None, fpl_id: str | None = None, tm_player_id: str | None = None
 ) -> dict:
     """Get player profile. At least one ID required.
 
     Args:
+        player_id: ESPN athlete ID (any league).
         fpl_id: FPL player ID (Premier League players only).
         tm_player_id: Transfermarkt player ID (any league).
     """
-    return wrap(_get_player_profile(_params(fpl_id=fpl_id, tm_player_id=tm_player_id)))
+    return wrap(
+        _get_player_profile(_params(player_id=player_id, fpl_id=fpl_id, tm_player_id=tm_player_id))
+    )
 
 
 def get_player_season_stats(*, player_id: str, league_slug: str | None = None) -> dict:
