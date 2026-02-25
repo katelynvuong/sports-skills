@@ -88,6 +88,18 @@ _REGISTRY = {
             "optional": ["interval", "fidelity"],
         },
         "get_last_trade_price": {"required": ["token_id"]},
+        # Bet analysis (pure computation)
+        "kelly_criterion": {"required": ["p", "b"]},
+        "monte_carlo_sim": {
+            "required": ["returns"],
+            "optional": ["n_simulations", "n_periods", "initial_bankroll", "seed"],
+        },
+        "max_drawdown": {"required": ["values"]},
+        "adjusted_kelly": {"required": ["p", "b"], "optional": ["edge_estimates"]},
+        "evaluate_bet": {
+            "required": ["p", "b"],
+            "optional": ["returns", "n_simulations", "n_periods", "initial_bankroll", "seed"],
+        },
     },
     "kalshi": {
         "get_exchange_status": {},
@@ -352,7 +364,13 @@ _INT_PARAMS = {
     "season_type",
     "week",
     "group",
+    "n_simulations",
+    "n_periods",
+    "seed",
 }
+
+# Params that should be parsed as float
+_FLOAT_PARAMS = {"p", "b", "initial_bankroll"}
 
 # Params that should be parsed as list (comma-separated)
 _LIST_PARAMS = {"tm_player_ids", "token_ids"}
@@ -479,6 +497,8 @@ def _parse_value(key, value):
         return value.lower() in ("true", "1", "yes", "")
     if key in _INT_PARAMS:
         return int(value)
+    if key in _FLOAT_PARAMS:
+        return float(value)
     if key in _LIST_PARAMS:
         return [v.strip() for v in value.split(",")]
     return value

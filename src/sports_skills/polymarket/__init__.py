@@ -5,6 +5,11 @@ Uses Gamma API (public, no auth) and CLOB API (public reads) via stdlib only.
 
 from __future__ import annotations
 
+from sports_skills.polymarket._calcs import adjusted_kelly as _adjusted_kelly
+from sports_skills.polymarket._calcs import evaluate_bet as _evaluate_bet
+from sports_skills.polymarket._calcs import kelly_criterion as _kelly_criterion
+from sports_skills.polymarket._calcs import max_drawdown as _max_drawdown
+from sports_skills.polymarket._calcs import monte_carlo_sim as _monte_carlo_sim
 from sports_skills.polymarket._connector import (
     get_event_details as _get_event_details,
 )
@@ -159,3 +164,69 @@ def get_price_history(
 def get_last_trade_price(*, token_id: str) -> dict:
     """Get the most recent trade price for a market."""
     return _get_last_trade_price(_req(token_id=token_id))
+
+
+# ============================================================
+# Bet Analysis (pure computation — no network calls)
+# ============================================================
+
+
+def kelly_criterion(*, p: float, b: float) -> dict:
+    """Compute the Kelly fraction for a binary bet."""
+    return _kelly_criterion(_req(p=p, b=b))
+
+
+def monte_carlo_sim(
+    *,
+    returns: str,
+    n_simulations: int = 10000,
+    n_periods: int | None = None,
+    initial_bankroll: float = 1000.0,
+    seed: int | None = None,
+) -> dict:
+    """Run Monte Carlo resampling on an empirical return set."""
+    return _monte_carlo_sim(
+        _req(
+            returns=returns,
+            n_simulations=n_simulations,
+            n_periods=n_periods,
+            initial_bankroll=initial_bankroll,
+            seed=seed,
+        )
+    )
+
+
+def max_drawdown(*, values: str) -> dict:
+    """Compute maximum drawdown from a wealth/equity series."""
+    return _max_drawdown(_req(values=values))
+
+
+def adjusted_kelly(
+    *, p: float, b: float, edge_estimates: str | None = None
+) -> dict:
+    """Compute uncertainty-adjusted Kelly fraction."""
+    return _adjusted_kelly(_req(p=p, b=b, edge_estimates=edge_estimates))
+
+
+def evaluate_bet(
+    *,
+    p: float,
+    b: float,
+    returns: str | None = None,
+    n_simulations: int = 10000,
+    n_periods: int | None = None,
+    initial_bankroll: float = 1000.0,
+    seed: int | None = None,
+) -> dict:
+    """Full bet evaluation: Kelly + Monte Carlo + Drawdown + Adjusted Kelly."""
+    return _evaluate_bet(
+        _req(
+            p=p,
+            b=b,
+            returns=returns,
+            n_simulations=n_simulations,
+            n_periods=n_periods,
+            initial_bankroll=initial_bankroll,
+            seed=seed,
+        )
+    )

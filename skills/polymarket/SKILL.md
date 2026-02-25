@@ -57,6 +57,44 @@ prices = polymarket.get_market_prices(token_id="abc123")
 3. `get_price_history --token_id=<id> --interval=1w`
 4. Present price movement.
 
+### Workflow: Bet Evaluation (EV & Risk)
+1. Find a market and get the current price (implied probability from the market).
+2. Estimate your true probability `p` (your edge) and the net odds `b` (payout ratio).
+   - For a binary market priced at 0.40, if you think the true probability is 0.55: `p=0.55`, `b = 1/0.40 - 1 = 1.5`.
+3. `kelly_criterion --p=0.55 --b=1.5` — get optimal bet fraction and edge.
+4. If you have historical returns, run full analysis:
+   `evaluate_bet --p=0.55 --b=1.5 --returns=0.08,-0.04,0.06,-0.03,0.07 --n_simulations=10000`
+5. Review: Kelly fraction, adjusted Kelly (shrunk for uncertainty), Monte Carlo P(profit), and max drawdown.
+
+### Workflow: Monte Carlo Risk Analysis
+1. Gather your empirical return set from past bets (comma-separated decimals).
+2. `monte_carlo_sim --returns=0.08,-0.04,0.06,-0.03,0.07 --n_simulations=10000 --initial_bankroll=1000`
+3. Review probability of profit, probability of ruin, drawdown distribution, and sample paths.
+
+### Workflow: Drawdown Analysis
+1. Get a wealth/equity series (e.g. from portfolio tracking).
+2. `max_drawdown --values=1000,1080,1040,1100,1050,1120,980`
+3. Review peak-to-trough loss and drawdown timeline.
+
+## Bet Analysis Commands
+
+These are pure computation commands — no API calls, no auth needed.
+
+| Command | Required | Optional | Description |
+|---|---|---|---|
+| `kelly_criterion` | p, b | | Kelly fraction for optimal bet sizing |
+| `monte_carlo_sim` | returns | n_simulations, n_periods, initial_bankroll, seed | Monte Carlo resampling simulation |
+| `max_drawdown` | values | | Maximum drawdown from a wealth series |
+| `adjusted_kelly` | p, b | edge_estimates | Uncertainty-adjusted Kelly fraction |
+| `evaluate_bet` | p, b | returns, n_simulations, n_periods, initial_bankroll, seed | All-in-one bet evaluation |
+
+**Parameter guide:**
+- `p`: Your estimated true probability of winning (0-1)
+- `b`: Net odds received (e.g. if the market pays 2:1, b=2.0; if priced at 0.40, b = 1/0.40 - 1 = 1.5)
+- `returns`: Comma-separated historical returns as decimals (e.g. "0.08,-0.04,0.06")
+- `edge_estimates`: Comma-separated edge estimates for uncertainty adjustment
+- `values`: Comma-separated wealth/equity values for drawdown analysis
+
 ## Examples
 
 User: "Who's favored to win the NBA Finals?"
@@ -73,6 +111,16 @@ User: "Who will win the Premier League?"
 User: "Show me Champions League odds"
 1. Call `search_markets(query="Champions League")`
 2. Present top contenders with prices, volume, and liquidity
+
+User: "Is this bet worth it? Market is at 40 cents and I think it's 55% likely"
+1. Compute net odds: b = (1/0.40) - 1 = 1.5
+2. Call `kelly_criterion(p=0.55, b=1.5)` → Kelly fraction, edge
+3. Call `evaluate_bet(p=0.55, b=1.5, returns="0.08,-0.04,0.06,-0.03,0.07")` for full risk analysis
+4. Present: edge, recommended bet size, probability of profit, max drawdown
+
+User: "Run a Monte Carlo on my past returns"
+1. Call `monte_carlo_sim(returns="0.08,-0.04,0.06,-0.03,0.07", n_simulations=10000, initial_bankroll=1000)`
+2. Present: mean/median final value, P(profit), P(ruin), drawdown stats, sample paths
 
 ## Error Handling & Fallbacks
 
