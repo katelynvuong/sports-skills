@@ -1,3 +1,8 @@
+## [0.9.3] - 2026-02-25
+
+### Fixed
+- **Football:** Refactored `_params()` return shape to `{"params": {...}}` to strictly conform to the Machina sports connector contract (PR #27).
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
