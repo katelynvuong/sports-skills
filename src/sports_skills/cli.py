@@ -740,6 +740,17 @@ def main():
             print(f"  {mod_name}: {', '.join(commands.keys())}")
         return
 
+    # Reserved "catalog" command: return all available modules
+    if args.module == "catalog":
+        from sports_skills import __version__
+
+        catalog = {
+            "version": __version__,
+            "modules": list(_REGISTRY.keys()),
+        }
+        print(json.dumps(catalog, indent=2))
+        return
+
     if not args.command:
         # Show commands for this module
         if args.module not in _REGISTRY:
