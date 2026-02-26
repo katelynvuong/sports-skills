@@ -9,6 +9,9 @@ from sports_skills.f1._connector import (
     get_championship_standings as _get_championship_standings,
 )
 from sports_skills.f1._connector import (
+    get_driver_comparison as _get_driver_comparison,
+)
+from sports_skills.f1._connector import (
     get_driver_info as _get_driver_info,
 )
 from sports_skills.f1._connector import (
@@ -37,9 +40,6 @@ from sports_skills.f1._connector import (
 )
 from sports_skills.f1._connector import (
     get_team_info as _get_team_info,
-)
-from sports_skills.f1._connector import (
-    get_driver_comparison as _get_driver_comparison,
 )
 from sports_skills.f1._connector import (
     get_tire_analysis as _get_tire_analysis,
