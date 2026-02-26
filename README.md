@@ -50,36 +50,6 @@ Each skill is a SKILL.md file that any compatible AI agent can load and use imme
 
 ---
 
-## Install Individual Skills
-
-Pick the sports you need. Each skill installs independently.
-
-### Sports Data
-
-| Skill | Sport | Install | Link |
-|-------|-------|---------|------|
-| `football-data` | Football (Soccer) | `npx skills add machina-sports/sports-skills@football-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/football-data) |
-| `nfl-data` | NFL | `npx skills add machina-sports/sports-skills@nfl-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/nfl-data) |
-| `nba-data` | NBA | `npx skills add machina-sports/sports-skills@nba-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/nba-data) |
-| `wnba-data` | WNBA | `npx skills add machina-sports/sports-skills@wnba-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/wnba-data) |
-| `nhl-data` | NHL | `npx skills add machina-sports/sports-skills@nhl-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/nhl-data) |
-| `mlb-data` | MLB | `npx skills add machina-sports/sports-skills@mlb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/mlb-data) |
-| `tennis-data` | Tennis (ATP + WTA) | `npx skills add machina-sports/sports-skills@tennis-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/tennis-data) |
-| `cfb-data` | College Football | `npx skills add machina-sports/sports-skills@cfb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/cfb-data) |
-| `cbb-data` | College Basketball | `npx skills add machina-sports/sports-skills@cbb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/cbb-data) |
-| `golf-data` | Golf (PGA/LPGA/DP World) | `npx skills add machina-sports/sports-skills@golf-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/golf-data) |
-| `fastf1` | Formula 1 | `npx skills add machina-sports/sports-skills@fastf1` | [skills.sh](https://skills.sh/machina-sports/sports-skills/fastf1) |
-| `sports-news` | Multi-sport News | `npx skills add machina-sports/sports-skills@sports-news` | [skills.sh](https://skills.sh/machina-sports/sports-skills/sports-news) |
-
-### Prediction Markets
-
-| Skill | Platform | Install | Link |
-|-------|----------|---------|------|
-| `kalshi` | Kalshi (CFTC-regulated) | `npx skills add machina-sports/sports-skills@kalshi` | [skills.sh](https://skills.sh/machina-sports/sports-skills/kalshi) |
-| `polymarket` | Polymarket | `npx skills add machina-sports/sports-skills@polymarket` | [skills.sh](https://skills.sh/machina-sports/sports-skills/polymarket) |
-
----
-
 ## Available Skills
 
 ### Sports Data
@@ -169,6 +139,34 @@ Once installed, your agent can call commands directly:
 
 **Get F1 race results:**
 > "Show me the lap data from the last Monaco Grand Prix"
+
+### Install Individual Skills
+
+Pick the sports you need. Each skill installs independently.
+
+#### Sports Data
+
+| Skill | Sport | Install | Link |
+|-------|-------|---------|------|
+| `football-data` | Football (Soccer) | `npx skills add machina-sports/sports-skills@football-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/football-data) |
+| `nfl-data` | NFL | `npx skills add machina-sports/sports-skills@nfl-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/nfl-data) |
+| `nba-data` | NBA | `npx skills add machina-sports/sports-skills@nba-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/nba-data) |
+| `wnba-data` | WNBA | `npx skills add machina-sports/sports-skills@wnba-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/wnba-data) |
+| `nhl-data` | NHL | `npx skills add machina-sports/sports-skills@nhl-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/nhl-data) |
+| `mlb-data` | MLB | `npx skills add machina-sports/sports-skills@mlb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/mlb-data) |
+| `tennis-data` | Tennis (ATP + WTA) | `npx skills add machina-sports/sports-skills@tennis-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/tennis-data) |
+| `cfb-data` | College Football | `npx skills add machina-sports/sports-skills@cfb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/cfb-data) |
+| `cbb-data` | College Basketball | `npx skills add machina-sports/sports-skills@cbb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/cbb-data) |
+| `golf-data` | Golf (PGA/LPGA/DP World) | `npx skills add machina-sports/sports-skills@golf-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/golf-data) |
+| `fastf1` | Formula 1 | `npx skills add machina-sports/sports-skills@fastf1` | [skills.sh](https://skills.sh/machina-sports/sports-skills/fastf1) |
+| `sports-news` | Multi-sport News | `npx skills add machina-sports/sports-skills@sports-news` | [skills.sh](https://skills.sh/machina-sports/sports-skills/sports-news) |
+
+#### Prediction Markets
+
+| Skill | Platform | Install | Link |
+|-------|----------|---------|------|
+| `kalshi` | Kalshi (CFTC-regulated) | `npx skills add machina-sports/sports-skills@kalshi` | [skills.sh](https://skills.sh/machina-sports/sports-skills/kalshi) |
+| `polymarket` | Polymarket | `npx skills add machina-sports/sports-skills@polymarket` | [skills.sh](https://skills.sh/machina-sports/sports-skills/polymarket) |
 
 ---
 
@@ -294,7 +292,11 @@ ATP and WTA tennis data via ESPN public endpoints. Tournament scores, rankings, 
 | `get_player_info` | Individual player profile |
 | `get_news` | Tennis news articles |
 ### cfb-data
+
 College Football (CFB) data via ESPN public endpoints. 750+ FBS teams with AP/Coaches/CFP rankings.
+
+| Command | Description |
+|---------|-------------|
 | `get_scoreboard` | Live/recent college football scores |
 | `get_standings` | Standings by conference |
 | `get_teams` | All 750+ FBS teams |
@@ -304,8 +306,13 @@ College Football (CFB) data via ESPN public endpoints. 750+ FBS teams with AP/Co
 | `get_rankings` | AP Top 25, Coaches Poll, CFP rankings |
 | `get_news` | College football news articles |
 | `get_schedule` | Schedule by week and conference |
+
 ### cbb-data
+
 College Basketball (CBB) data via ESPN public endpoints. 360+ D1 teams with AP/Coaches rankings and March Madness.
+
+| Command | Description |
+|---------|-------------|
 | `get_scoreboard` | Live/recent college basketball scores |
 | `get_standings` | Standings by conference |
 | `get_teams` | All 360+ D1 teams |
@@ -315,8 +322,13 @@ College Basketball (CBB) data via ESPN public endpoints. 360+ D1 teams with AP/C
 | `get_rankings` | AP Top 25, Coaches Poll |
 | `get_news` | College basketball news articles |
 | `get_schedule` | Schedule by date and conference |
+
 ### golf-data
+
 PGA Tour, LPGA, and DP World Tour golf data via ESPN public endpoints. Tournament leaderboards, season schedules, golfer profiles, and news.
+
+| Command | Description |
+|---------|-------------|
 | `get_leaderboard` | Current tournament leaderboard with all golfer scores |
 | `get_schedule` | Full season tournament schedule |
 | `get_player_info` | Individual golfer profile |
@@ -435,6 +447,7 @@ Instructions for the AI agent...
 
 Works with every agent that supports the SKILL.md format:
 
+- sportsclaw
 - Claude Code
 - OpenClaw (clawdbot / moltbot)
 - Cursor
@@ -478,12 +491,6 @@ We're actively expanding to cover more sports and data sources — and always lo
 See the existing SKILL.md files and the [Agent Skills spec](https://agentskills.io/specification) for format details.
 
 Join the [Machina Sports Discord](https://discord.gg/PBYd6FbBSK) to discuss ideas, get help, or coordinate on new skills.
-
----
-
-## World Cup 2026
-
-This project ships with World Cup 2026 coverage built in. The `football-data` skill includes FIFA World Cup as a supported competition. As the tournament approaches (June 2026), we'll add dedicated World Cup skills for bracket tracking, group stage analysis, and match predictions.
 
 ---
 
