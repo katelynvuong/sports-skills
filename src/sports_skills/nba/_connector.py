@@ -49,19 +49,21 @@ def _normalize_event(espn_event):
         team = c.get("team", {})
         linescores = c.get("linescores", [])
         records = c.get("records", [])
-        competitors.append({
-            "team": {
-                "id": str(team.get("id", "")),
-                "name": team.get("displayName", ""),
-                "abbreviation": team.get("abbreviation", ""),
-                "logo": team.get("logo", ""),
-            },
-            "home_away": c.get("homeAway", ""),
-            "score": c.get("score", "0"),
-            "period_scores": [int(p.get("value", 0)) for p in linescores],
-            "record": records[0].get("summary", "") if records else "",
-            "winner": c.get("winner", False),
-        })
+        competitors.append(
+            {
+                "team": {
+                    "id": str(team.get("id", "")),
+                    "name": team.get("displayName", ""),
+                    "abbreviation": team.get("abbreviation", ""),
+                    "logo": team.get("logo", ""),
+                },
+                "home_away": c.get("homeAway", ""),
+                "score": c.get("score", "0"),
+                "period_scores": [int(p.get("value", 0)) for p in linescores],
+                "record": records[0].get("summary", "") if records else "",
+                "winner": c.get("winner", False),
+            }
+        )
 
     odds = normalize_odds(comp.get("odds", []))
 
@@ -93,30 +95,31 @@ def _normalize_standings_entries(standings_data):
     entries = []
     for entry in standings_data.get("entries", []):
         team = entry.get("team", {})
-        stats = {s["name"]: s.get("displayValue", s.get("value", ""))
-                 for s in entry.get("stats", [])}
-        entries.append({
-            "team": {
-                "id": str(team.get("id", "")),
-                "name": team.get("displayName", ""),
-                "abbreviation": team.get("abbreviation", ""),
-                "logo": team.get("logos", [{}])[0].get("href", "") if team.get("logos") else "",
-            },
-            "wins": stats.get("wins", "0"),
-            "losses": stats.get("losses", "0"),
-            "win_pct": stats.get("winPercent", stats.get("winPct", "0")),
-            "games_back": stats.get("gamesBehind", stats.get("GB", "")),
-            "streak": stats.get("streak", ""),
-            "home_record": stats.get("Home", stats.get("homeRecord", "")),
-            "away_record": stats.get("Road", stats.get("awayRecord", "")),
-            "conference_record": stats.get("vsConf", stats.get("conferenceRecord", "")),
-            "division_record": stats.get("vsDiv", stats.get("divisionRecord", "")),
-            "last_ten": stats.get("L10", stats.get("last10Record", "")),
-            "points_per_game": stats.get("avgPointsFor", stats.get("pointsFor", "")),
-            "opp_points_per_game": stats.get("avgPointsAgainst", stats.get("pointsAgainst", "")),
-            "diff": stats.get("differential", stats.get("diff", "")),
-            "playoff_seed": stats.get("playoffSeed", ""),
-        })
+        stats = {s["name"]: s.get("displayValue", s.get("value", "")) for s in entry.get("stats", [])}
+        entries.append(
+            {
+                "team": {
+                    "id": str(team.get("id", "")),
+                    "name": team.get("displayName", ""),
+                    "abbreviation": team.get("abbreviation", ""),
+                    "logo": team.get("logos", [{}])[0].get("href", "") if team.get("logos") else "",
+                },
+                "wins": stats.get("wins", "0"),
+                "losses": stats.get("losses", "0"),
+                "win_pct": stats.get("winPercent", stats.get("winPct", "0")),
+                "games_back": stats.get("gamesBehind", stats.get("GB", "")),
+                "streak": stats.get("streak", ""),
+                "home_record": stats.get("Home", stats.get("homeRecord", "")),
+                "away_record": stats.get("Road", stats.get("awayRecord", "")),
+                "conference_record": stats.get("vsConf", stats.get("conferenceRecord", "")),
+                "division_record": stats.get("vsDiv", stats.get("divisionRecord", "")),
+                "last_ten": stats.get("L10", stats.get("last10Record", "")),
+                "points_per_game": stats.get("avgPointsFor", stats.get("pointsFor", "")),
+                "opp_points_per_game": stats.get("avgPointsAgainst", stats.get("pointsAgainst", "")),
+                "diff": stats.get("differential", stats.get("diff", "")),
+                "playoff_seed": stats.get("playoffSeed", ""),
+            }
+        )
     return entries
 
 
@@ -138,20 +141,24 @@ def _normalize_standings(espn_data):
                 standings = division.get("standings", {})
                 entries = _normalize_standings_entries(standings)
                 if entries:
-                    groups.append({
-                        "conference": conference_name,
-                        "division": division_name,
-                        "entries": entries,
-                    })
+                    groups.append(
+                        {
+                            "conference": conference_name,
+                            "division": division_name,
+                            "entries": entries,
+                        }
+                    )
         # Fall back to direct standings on the conference
         elif child.get("standings"):
             entries = _normalize_standings_entries(child["standings"])
             if entries:
-                groups.append({
-                    "conference": conference_name,
-                    "division": "",
-                    "entries": entries,
-                })
+                groups.append(
+                    {
+                        "conference": conference_name,
+                        "division": "",
+                        "entries": entries,
+                    }
+                )
     return groups
 
 
@@ -208,7 +215,9 @@ def _parse_athlete(athlete, default_position=""):
         "height": athlete.get("displayHeight", ""),
         "weight": athlete.get("displayWeight", ""),
         "experience": athlete.get("experience", {}).get("years", ""),
-        "college": athlete.get("college", {}).get("name", "") if isinstance(athlete.get("college"), dict) else athlete.get("college", ""),
+        "college": athlete.get("college", {}).get("name", "")
+        if isinstance(athlete.get("college"), dict)
+        else athlete.get("college", ""),
         "status": athlete.get("status", {}).get("type", ""),
     }
 
@@ -239,19 +248,21 @@ def _normalize_game_summary(summary_data):
         team = c.get("team", [{}])
         if isinstance(team, list):
             team = team[0] if team else {}
-        competitors.append({
-            "team": {
-                "id": str(team.get("id", "")),
-                "name": team.get("displayName", team.get("location", "")),
-                "abbreviation": team.get("abbreviation", ""),
-                "logo": team.get("logo", ""),
-            },
-            "home_away": c.get("homeAway", ""),
-            "score": c.get("score", "0"),
-            "winner": c.get("winner", False),
-            "record": c.get("record", ""),
-            "linescores": [ls.get("displayValue", "0") for ls in c.get("linescores", [])],
-        })
+        competitors.append(
+            {
+                "team": {
+                    "id": str(team.get("id", "")),
+                    "name": team.get("displayName", team.get("location", "")),
+                    "abbreviation": team.get("abbreviation", ""),
+                    "logo": team.get("logo", ""),
+                },
+                "home_away": c.get("homeAway", ""),
+                "score": c.get("score", "0"),
+                "winner": c.get("winner", False),
+                "record": c.get("record", ""),
+                "linescores": [ls.get("displayValue", "0") for ls in c.get("linescores", [])],
+            }
+        )
 
     # Box score
     boxscore = summary_data.get("boxscore", {})
@@ -265,44 +276,52 @@ def _normalize_game_summary(summary_data):
             athletes_stats = []
             for ath in stat_group.get("athletes", []):
                 athlete = ath.get("athlete", {})
-                athletes_stats.append({
-                    "name": athlete.get("displayName", ""),
-                    "position": athlete.get("position", {}).get("abbreviation", ""),
-                    "stats": dict(zip(labels, ath.get("stats", []))),
-                })
+                athletes_stats.append(
+                    {
+                        "name": athlete.get("displayName", ""),
+                        "position": athlete.get("position", {}).get("abbreviation", ""),
+                        "stats": dict(zip(labels, ath.get("stats", []))),
+                    }
+                )
             totals = stat_group.get("totals", [])
-            stats_list.append({
-                "category": stat_name,
-                "labels": labels,
-                "athletes": athletes_stats,
-                "totals": dict(zip(labels, totals)) if totals else {},
-            })
-        box_teams.append({
-            "team": {
-                "id": str(team.get("id", "")),
-                "name": team.get("displayName", ""),
-                "abbreviation": team.get("abbreviation", ""),
-            },
-            "statistics": stats_list,
-        })
+            stats_list.append(
+                {
+                    "category": stat_name,
+                    "labels": labels,
+                    "athletes": athletes_stats,
+                    "totals": dict(zip(labels, totals)) if totals else {},
+                }
+            )
+        box_teams.append(
+            {
+                "team": {
+                    "id": str(team.get("id", "")),
+                    "name": team.get("displayName", ""),
+                    "abbreviation": team.get("abbreviation", ""),
+                },
+                "statistics": stats_list,
+            }
+        )
 
     # Scoring plays
     scoring_plays = []
     for sp in summary_data.get("scoringPlays", []):
         team = sp.get("team", {})
-        scoring_plays.append({
-            "period": sp.get("period", {}).get("number", ""),
-            "clock": sp.get("clock", {}).get("displayValue", ""),
-            "type": sp.get("type", {}).get("text", ""),
-            "text": sp.get("text", ""),
-            "team": {
-                "id": str(team.get("id", "")),
-                "name": team.get("displayName", team.get("name", "")),
-                "abbreviation": team.get("abbreviation", ""),
-            },
-            "home_score": sp.get("homeScore", ""),
-            "away_score": sp.get("awayScore", ""),
-        })
+        scoring_plays.append(
+            {
+                "period": sp.get("period", {}).get("number", ""),
+                "clock": sp.get("clock", {}).get("displayValue", ""),
+                "type": sp.get("type", {}).get("text", ""),
+                "text": sp.get("text", ""),
+                "team": {
+                    "id": str(team.get("id", "")),
+                    "name": team.get("displayName", team.get("name", "")),
+                    "abbreviation": team.get("abbreviation", ""),
+                },
+                "home_score": sp.get("homeScore", ""),
+                "away_score": sp.get("awayScore", ""),
+            }
+        )
 
     # Leaders
     leaders = []
@@ -313,21 +332,25 @@ def _normalize_game_summary(summary_data):
             top = cat.get("leaders", [{}])
             top_leader = top[0] if top else {}
             athlete = top_leader.get("athlete", {})
-            categories.append({
-                "category": cat.get("displayName", cat.get("name", "")),
-                "leader": {
-                    "name": athlete.get("displayName", ""),
-                    "position": athlete.get("position", {}).get("abbreviation", ""),
-                    "value": top_leader.get("displayValue", ""),
+            categories.append(
+                {
+                    "category": cat.get("displayName", cat.get("name", "")),
+                    "leader": {
+                        "name": athlete.get("displayName", ""),
+                        "position": athlete.get("position", {}).get("abbreviation", ""),
+                        "value": top_leader.get("displayValue", ""),
+                    },
+                }
+            )
+        leaders.append(
+            {
+                "team": {
+                    "id": str(team.get("id", "")),
+                    "name": team.get("displayName", ""),
                 },
-            })
-        leaders.append({
-            "team": {
-                "id": str(team.get("id", "")),
-                "name": team.get("displayName", ""),
-            },
-            "categories": categories,
-        })
+                "categories": categories,
+            }
+        )
 
     return {
         "game_info": game_info,
@@ -342,15 +365,17 @@ def _normalize_news(espn_data):
     """Normalize ESPN news response."""
     articles = []
     for article in espn_data.get("articles", []):
-        articles.append({
-            "headline": article.get("headline", ""),
-            "description": article.get("description", ""),
-            "published": article.get("published", ""),
-            "type": article.get("type", ""),
-            "premium": article.get("premium", False),
-            "link": "",
-            "images": [img.get("url", "") for img in article.get("images", [])[:1]],
-        })
+        articles.append(
+            {
+                "headline": article.get("headline", ""),
+                "description": article.get("description", ""),
+                "published": article.get("published", ""),
+                "type": article.get("type", ""),
+                "premium": article.get("premium", False),
+                "link": "",
+                "images": [img.get("url", "") for img in article.get("images", [])[:1]],
+            }
+        )
         # Extract link
         links = article.get("links", {})
         web = links.get("web", {})
@@ -499,6 +524,7 @@ def get_game_summary(request_data):
 def _nba_current_season():
     """Detect the most recent active NBA season year (season starts Oct, ends Jun)."""
     import datetime
+
     now = datetime.datetime.utcnow()
     # NBA season starts in October; if Oct-Dec use current year, else previous year
     return now.year if now.month >= 10 else now.year - 1
@@ -619,11 +645,13 @@ def _normalize_win_probability(summary_data):
 
     timeline = []
     for entry in wp_raw:
-        timeline.append({
-            "play_id": str(entry.get("playId", "")),
-            "home_win_pct": round(entry.get("homeWinPercentage", 0) * 100, 1),
-            "tie_pct": round(entry.get("tiePercentage", 0) * 100, 1),
-        })
+        timeline.append(
+            {
+                "play_id": str(entry.get("playId", "")),
+                "home_win_pct": round(entry.get("homeWinPercentage", 0) * 100, 1),
+                "tie_pct": round(entry.get("tiePercentage", 0) * 100, 1),
+            }
+        )
 
     return {"timeline": timeline, "count": len(timeline)}
 

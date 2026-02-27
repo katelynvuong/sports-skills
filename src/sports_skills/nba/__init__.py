@@ -27,6 +27,9 @@ from sports_skills.nba._cdn import (
 from sports_skills.nba._cdn import (
     get_live_scoreboard as _get_live_scoreboard,
 )
+from sports_skills.nba._cdn import (
+    get_player_live_stats as _get_player_live_stats,
+)
 from sports_skills.nba._connector import (
     get_depth_chart as _get_depth_chart,
 )
@@ -215,9 +218,7 @@ def get_depth_chart(*, team_id: str) -> dict:
     return wrap(_get_depth_chart(_params(team_id=team_id)))
 
 
-def get_team_stats(
-    *, team_id: str, season_year: int | None = None, season_type: int | None = None
-) -> dict:
+def get_team_stats(*, team_id: str, season_year: int | None = None, season_type: int | None = None) -> dict:
     """Get NBA team season statistics.
 
     Args:
@@ -225,16 +226,10 @@ def get_team_stats(
         season_year: Season year. Defaults to current.
         season_type: 2 = regular season (default), 3 = postseason.
     """
-    return wrap(
-        _get_team_stats(
-            _params(team_id=team_id, season_year=season_year, season_type=season_type)
-        )
-    )
+    return wrap(_get_team_stats(_params(team_id=team_id, season_year=season_year, season_type=season_type)))
 
 
-def get_player_stats(
-    *, player_id: str, season_year: int | None = None, season_type: int | None = None
-) -> dict:
+def get_player_stats(*, player_id: str, season_year: int | None = None, season_type: int | None = None) -> dict:
     """Get NBA player season statistics.
 
     Args:
@@ -242,13 +237,7 @@ def get_player_stats(
         season_year: Season year. Defaults to current.
         season_type: 2 = regular season (default), 3 = postseason.
     """
-    return wrap(
-        _get_player_stats(
-            _params(
-                player_id=player_id, season_year=season_year, season_type=season_type
-            )
-        )
-    )
+    return wrap(_get_player_stats(_params(player_id=player_id, season_year=season_year, season_type=season_type)))
 
 
 # ============================================================
@@ -310,3 +299,17 @@ def get_live_playbyplay(*, game_id: str) -> dict:
         pass
     # Fallback to ESPN
     return get_play_by_play(event_id=game_id)
+
+
+def get_player_live_stats(*, player_name: str) -> dict:
+    """Get real-time stats for a specific NBA player in today's games.
+
+    Searches all live/completed games to find the player and returns
+    their full box score line including shooting splits, minutes,
+    steals, blocks, and plus/minus.
+
+    Args:
+        player_name: Player name to search for (e.g. "Luka", "LeBron James").
+                     Partial matches supported.
+    """
+    return wrap(_get_player_live_stats(_params(player_name=player_name)))

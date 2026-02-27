@@ -83,23 +83,23 @@ def _normalize_cdn_game(game):
         periods = []
         for p in team_data.get("periods", []):
             periods.append(int(p.get("score", 0)))
-        competitors.append({
-            "team": {
-                "id": str(team_data.get("teamId", "")),
-                "name": f"{team_data.get('teamCity', '')} {team_data.get('teamName', '')}".strip(),
-                "abbreviation": team_data.get("teamTricode", ""),
-            },
-            "home_away": home_away,
-            "score": str(team_data.get("score", 0)),
-            "period_scores": periods,
-            "record": f"{team_data.get('wins', 0)}-{team_data.get('losses', 0)}",
-            "winner": (
-                status_code == 3
-                and int(team_data.get("score", 0)) > int(
-                    (away if home_away == "home" else home).get("score", 0)
-                )
-            ),
-        })
+        competitors.append(
+            {
+                "team": {
+                    "id": str(team_data.get("teamId", "")),
+                    "name": f"{team_data.get('teamCity', '')} {team_data.get('teamName', '')}".strip(),
+                    "abbreviation": team_data.get("teamTricode", ""),
+                },
+                "home_away": home_away,
+                "score": str(team_data.get("score", 0)),
+                "period_scores": periods,
+                "record": f"{team_data.get('wins', 0)}-{team_data.get('losses', 0)}",
+                "winner": (
+                    status_code == 3
+                    and int(team_data.get("score", 0)) > int((away if home_away == "home" else home).get("score", 0))
+                ),
+            }
+        )
 
     # Game leaders
     leaders = {}
@@ -222,18 +222,20 @@ def _normalize_cdn_boxscore(data):
         for period in team_data.get("periods", []):
             periods.append(int(period.get("score", 0)))
 
-        teams.append({
-            "team": {
-                "id": str(team_data.get("teamId", "")),
-                "name": f"{team_data.get('teamCity', '')} {team_data.get('teamName', '')}".strip(),
-                "abbreviation": team_data.get("teamTricode", ""),
-            },
-            "home_away": home_away,
-            "score": str(team_data.get("score", 0)),
-            "period_scores": periods,
-            "statistics": team_stats,
-            "players": players,
-        })
+        teams.append(
+            {
+                "team": {
+                    "id": str(team_data.get("teamId", "")),
+                    "name": f"{team_data.get('teamCity', '')} {team_data.get('teamName', '')}".strip(),
+                    "abbreviation": team_data.get("teamTricode", ""),
+                },
+                "home_away": home_away,
+                "score": str(team_data.get("score", 0)),
+                "period_scores": periods,
+                "statistics": team_stats,
+                "players": players,
+            }
+        )
 
     return {
         "game_info": game_info,
@@ -339,3 +341,104 @@ def get_live_playbyplay(request_data):
         return data
 
     return _normalize_cdn_playbyplay(data)
+
+
+def get_player_live_stats(request_data):
+    """Get real-time stats for a specific player in today's games.
+
+    Searches all live/completed games to find the player and returns
+    their full box score line including shooting splits, minutes,
+    steals, blocks, and plus/minus.
+
+    Args:
+        player_name: Player name to search for (partial match supported).
+
+    Returns:
+        Player's full live stats if found, or error if not playing today.
+    """
+    params = request_data.get("params", {})
+    player_name = params.get("player_name", "").strip().lower()
+    if not player_name:
+        return {"error": True, "message": "player_name is required"}
+
+    # Get today's scoreboard
+    scoreboard = get_live_scoreboard()
+    if scoreboard.get("error"):
+        return scoreboard
+
+    games = scoreboard.get("games", [])
+    if not games:
+        return {"error": True, "message": "No NBA games today"}
+
+    # Search each game's boxscore for the player
+    for game in games:
+        game_id = game.get("id")
+        if not game_id:
+            continue
+
+        boxscore = get_live_boxscore({"params": {"game_id": game_id}})
+        if boxscore.get("error"):
+            continue
+
+        for team in boxscore.get("teams", []):
+            team_info = team.get("team", {})
+            for player in team.get("players", []):
+                pname = player.get("name", "").lower()
+                pname_short = player.get("name_short", "").lower()
+
+                # Match on full name, short name, or last name
+                if (
+                    player_name in pname or player_name in pname_short or player_name == pname.split()[-1]
+                    if pname
+                    else False
+                ):
+                    # Found the player
+                    game_info = boxscore.get("game_info", {})
+                    opponent = None
+                    for t in boxscore.get("teams", []):
+                        if t.get("team", {}).get("id") != team_info.get("id"):
+                            opponent = t.get("team", {})
+                            break
+
+                    return {
+                        "player": {
+                            "id": player.get("id"),
+                            "name": player.get("name"),
+                            "jersey": player.get("jersey"),
+                            "position": player.get("position"),
+                            "starter": player.get("starter"),
+                            "on_court": player.get("on_court"),
+                        },
+                        "stats": {
+                            "minutes": player.get("minutes"),
+                            "points": player.get("points"),
+                            "rebounds": player.get("rebounds"),
+                            "assists": player.get("assists"),
+                            "steals": player.get("steals"),
+                            "blocks": player.get("blocks"),
+                            "turnovers": player.get("turnovers"),
+                            "field_goals": player.get("field_goals"),
+                            "three_pointers": player.get("three_pointers"),
+                            "free_throws": player.get("free_throws"),
+                            "plus_minus": player.get("plus_minus"),
+                        },
+                        "game": {
+                            "id": game_info.get("id"),
+                            "status": game_info.get("status"),
+                            "status_text": game_info.get("status_text"),
+                            "period": game_info.get("period"),
+                            "game_clock": game_info.get("game_clock"),
+                        },
+                        "team": {
+                            "id": team_info.get("id"),
+                            "name": team_info.get("name"),
+                            "abbreviation": team_info.get("abbreviation"),
+                            "score": team.get("score"),
+                        },
+                        "opponent": opponent,
+                    }
+
+    return {
+        "error": True,
+        "message": f"Player '{params.get('player_name')}' not found in today's games",
+    }
