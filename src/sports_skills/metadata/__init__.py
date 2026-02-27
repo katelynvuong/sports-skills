@@ -39,9 +39,17 @@ from __future__ import annotations
 from sports_skills._response import wrap
 from sports_skills.metadata._connector import (
     get_player_photo as _get_player_photo,
+)
+from sports_skills.metadata._connector import (
     get_team_info as _get_team_info,
+)
+from sports_skills.metadata._connector import (
     get_team_logo as _get_team_logo,
+)
+from sports_skills.metadata._connector import (
     search_players as _search_players,
+)
+from sports_skills.metadata._connector import (
     search_teams as _search_teams,
 )
 
