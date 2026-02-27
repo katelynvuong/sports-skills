@@ -1,11 +1,32 @@
 """NBA data — scores, standings, rosters, schedules, game summaries, and more.
 
-Wraps ESPN public endpoints. No API keys required. Zero config.
+## Data Sources (Priority Order)
+
+**Live game data** uses NBA CDN (cdn.nba.com) as primary source with ESPN fallback:
+- ``get_live_scoreboard()`` — Real-time scores, game clock, leaders
+- ``get_live_boxscore(game_id)`` — Real-time box scores, player stats
+- ``get_live_playbyplay(game_id)`` — Real-time play-by-play
+
+If NBA CDN is unavailable, these automatically fall back to ESPN.
+
+**Static data** uses ESPN directly:
+- Standings, rosters, schedules, team stats, news, etc.
+
+No API keys required. Zero config.
 """
 
 from __future__ import annotations
 
 from sports_skills._response import wrap
+from sports_skills.nba._cdn import (
+    get_live_boxscore as _get_live_boxscore,
+)
+from sports_skills.nba._cdn import (
+    get_live_playbyplay as _get_live_playbyplay,
+)
+from sports_skills.nba._cdn import (
+    get_live_scoreboard as _get_live_scoreboard,
+)
 from sports_skills.nba._connector import (
     get_depth_chart as _get_depth_chart,
 )
@@ -228,3 +249,64 @@ def get_player_stats(
             )
         )
     )
+
+
+# ============================================================
+# NBA CDN — Real-Time Live Data
+# ============================================================
+
+
+def get_live_scoreboard() -> dict:
+    """Get real-time NBA scores. Primary: cdn.nba.com, Fallback: ESPN.
+
+    Uses NBA CDN for fastest live updates. Automatically falls back to
+    ESPN if CDN is unavailable or returns empty data.
+    """
+    try:
+        result = _get_live_scoreboard()
+        if result and result.get("games"):
+            return wrap(result)
+    except Exception:
+        pass
+    # Fallback to ESPN
+    return get_scoreboard()
+
+
+def get_live_boxscore(*, game_id: str) -> dict:
+    """Get real-time NBA box score. Primary: cdn.nba.com, Fallback: ESPN.
+
+    Uses NBA CDN for fastest live updates. Automatically falls back to
+    ESPN game summary if CDN is unavailable.
+
+    Args:
+        game_id: NBA game ID (e.g. "0022400001"). For ESPN fallback,
+                 this is converted to event_id format.
+    """
+    try:
+        result = _get_live_boxscore(_params(game_id=game_id))
+        if result and result.get("game_info"):
+            return wrap(result)
+    except Exception:
+        pass
+    # Fallback to ESPN - game_id format differs, try direct
+    return get_game_summary(event_id=game_id)
+
+
+def get_live_playbyplay(*, game_id: str) -> dict:
+    """Get real-time NBA play-by-play. Primary: cdn.nba.com, Fallback: ESPN.
+
+    Uses NBA CDN for fastest live updates. Automatically falls back to
+    ESPN play-by-play if CDN is unavailable.
+
+    Args:
+        game_id: NBA game ID (e.g. "0022400001"). For ESPN fallback,
+                 this is converted to event_id format.
+    """
+    try:
+        result = _get_live_playbyplay(_params(game_id=game_id))
+        if result and result.get("actions"):
+            return wrap(result)
+    except Exception:
+        pass
+    # Fallback to ESPN
+    return get_play_by_play(event_id=game_id)
