@@ -128,9 +128,13 @@ class TestBestMatches:
 
 
 class TestMappingTables:
-    def test_kalshi_series_keys(self):
-        expected_sports = {"nfl", "nba", "mlb", "nhl", "wnba", "cfb", "cbb"}
-        assert set(KALSHI_SERIES.keys()) == expected_sports
+    def test_kalshi_series_contains_us_sports(self):
+        us_sports = {"nfl", "nba", "mlb", "nhl", "wnba", "cfb", "cbb"}
+        assert us_sports.issubset(set(KALSHI_SERIES.keys()))
+
+    def test_kalshi_series_contains_football(self):
+        football_sports = {"epl", "ucl", "laliga", "bundesliga", "seriea", "ligue1", "mls"}
+        assert football_sports.issubset(set(KALSHI_SERIES.keys()))
 
     def test_kalshi_series_values_are_strings(self):
         for series in KALSHI_SERIES.values():
@@ -140,9 +144,9 @@ class TestMappingTables:
     def test_scoreboard_sports(self):
         assert {"nfl", "nba", "mlb", "nhl", "wnba", "cfb", "cbb"} == SCOREBOARD_SPORTS
 
-    def test_kalshi_and_scoreboard_match(self):
-        # Every sport with a Kalshi series should also have a scoreboard
-        assert set(KALSHI_SERIES.keys()) == SCOREBOARD_SPORTS
+    def test_scoreboard_sports_have_kalshi_series(self):
+        # Every ESPN scoreboard sport should have a Kalshi series mapping
+        assert SCOREBOARD_SPORTS.issubset(set(KALSHI_SERIES.keys()))
 
 
 # ============================================================
