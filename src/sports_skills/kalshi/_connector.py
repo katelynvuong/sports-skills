@@ -639,7 +639,7 @@ def search_markets(request_data):
         all_markets = []
         for event in all_events:
             title = event.get("title", "")
-            
+
             # Normalization for Kalshi's strict team names
             normalized_query = str(query or "").lower()
             norm_map = {
@@ -674,17 +674,17 @@ def search_markets(request_data):
                 "rockets": ["houston", "rockets"],
                 "wizards": ["washington", "wizards"]
             }
-            
+
             # Expand query into possible matches
             search_terms = [normalized_query]
             for mascot, kalshi_names in norm_map.items():
                 if mascot in normalized_query:
                     search_terms.extend(kalshi_names)
-            
+
             if query:
                 # Check if ANY of our expanded search terms match the title
                 title_match = any(term in str(title).lower() for term in search_terms)
-                
+
                 # Also check market titles
                 event_match = False
                 markets = event.get("markets", [])
@@ -695,7 +695,7 @@ def search_markets(request_data):
                         if any(term in m_title or term in m_sub for term in search_terms):
                             event_match = True
                             break
-                
+
                 if not (title_match or event_match):
                     continue
 
