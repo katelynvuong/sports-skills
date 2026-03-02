@@ -117,6 +117,7 @@ LEAGUES = {
         "understat": None,
         "fpl": None,
         "transfermarkt": "liga-mx",
+        "season_format": "jan",
         "name": "Liga MX",
         "country": "Mexico",
     },
@@ -125,6 +126,7 @@ LEAGUES = {
         "understat": None,
         "fpl": None,
         "transfermarkt": "superliga",
+        "season_format": "jan",
         "name": "Liga Profesional Argentina",
         "country": "Argentina",
     },
@@ -157,6 +159,7 @@ LEAGUES = {
         "understat": None,
         "fpl": None,
         "transfermarkt": "j1-league",
+        "season_format": "jan",
         "name": "J.League",
         "country": "Japan",
     },
@@ -174,6 +177,7 @@ LEAGUES = {
         "understat": None,
         "fpl": None,
         "transfermarkt": "nwsl",
+        "season_format": "jan",
         "name": "NWSL",
         "country": "USA",
     },
@@ -674,28 +678,85 @@ def _tm_request(endpoint, ttl=3600):
 
 
 # ============================================================
-# Season Detection (ESPN-based)
+# Season Detection (ESPN-based, with date fallback)
 # ============================================================
 
 
+def _estimate_current_season(slug, league):
+    """Estimate the current season from the system date when ESPN is unavailable.
+
+    Calendar-year leagues (season_format "jan"): Brazil, MLS, J-League, etc.
+      → season year = current year (season runs ~Jan-Dec).
+    European leagues (season_format "aug"): EPL, La Liga, Bundesliga, etc.
+      → season year = current year if month >= 8, else previous year
+        (season runs ~Aug of year N to May/Jun of year N+1).
+    Tournaments without openfootball config (Champions League, World Cup, etc.)
+      → same "aug" heuristic as European leagues.
+    """
+    now = datetime.utcnow()
+    of_cfg = league.get("openfootball") or {}
+    season_format = league.get("season_format") or of_cfg.get("season_format", "aug")
+
+    if season_format == "jan":
+        year = now.year
+    else:
+        year = now.year if now.month >= 8 else now.year - 1
+
+    name = league.get("name", slug)
+    if season_format == "jan":
+        display = f"{year} {name}"
+        start = f"{year}-01-01T00:00Z"
+        end = f"{year}-12-31T23:59Z"
+    else:
+        display = f"{year}-{str(year + 1)[-2:]} {name}"
+        start = f"{year}-08-01T00:00Z"
+        end = f"{year + 1}-06-30T23:59Z"
+
+    return {
+        "year": year,
+        "start_date": start,
+        "end_date": end,
+        "display_name": display,
+        "calendar": [],
+        "slug": slug,
+        "estimated": True,
+    }
+
+
 def _detect_current_season(slug, espn_slug):
-    """Detect current season year/dates for a league using ESPN scoreboard."""
+    """Detect current season year/dates for a league using ESPN scoreboard.
+
+    Falls back to date-based estimation when ESPN is unavailable so that
+    callers always receive usable season data.
+    """
     if not espn_slug:
         return None
     cache_key = f"season_detect:{espn_slug}"
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached if cached else None
+
+    league = LEAGUES.get(slug) or {}
     data = _espn_request(espn_slug, "scoreboard")
+
     if data.get("error"):
-        return None
+        fallback = _estimate_current_season(slug, league)
+        _cache_set(cache_key, fallback, ttl=300)
+        return fallback
+
     leagues = data.get("leagues", [])
     if not leagues:
-        return None
+        fallback = _estimate_current_season(slug, league)
+        _cache_set(cache_key, fallback, ttl=300)
+        return fallback
+
     league_info = leagues[0]
     season = league_info.get("season", {})
     if not season:
-        return None
+        fallback = _estimate_current_season(slug, league)
+        _cache_set(cache_key, fallback, ttl=300)
+        return fallback
+
     result = {
         "year": season.get("year"),
         "start_date": season.get("startDate", ""),
@@ -2007,7 +2068,10 @@ def _normalize_tm_transfer(transfer, tm_player_id=""):
 
 
 def get_current_season(request_data):
-    """Detect current season for a competition using ESPN."""
+    """Detect current season for a competition using ESPN.
+
+    Falls back to date-based estimation when ESPN is unavailable.
+    """
     params = request_data.get("params", {})
     competition_id = params.get("competition_id") or params.get(
         "command_attribute", {}
@@ -2021,7 +2085,7 @@ def get_current_season(request_data):
     season = _detect_current_season(slug, espn_slug)
     if not season:
         return {"error": True, "message": "Could not detect current season"}
-    return {
+    result = {
         "competition": {"id": slug, "name": league["name"]},
         "season": {
             "id": f"{slug}-{season['year']}",
@@ -2032,6 +2096,9 @@ def get_current_season(request_data):
         },
         "calendar_dates": len(season.get("calendar", [])),
     }
+    if season.get("estimated"):
+        result["estimated"] = True
+    return result
 
 
 def get_competitions(request_data):
@@ -2048,11 +2115,14 @@ def get_competitions(request_data):
         if espn_slug:
             season_info = _detect_current_season(slug, espn_slug)
             if season_info:
-                comp["current_season"] = {
+                cs = {
                     "year": str(season_info["year"]),
                     "start_date": season_info["start_date"],
                     "end_date": season_info["end_date"],
                 }
+                if season_info.get("estimated"):
+                    cs["estimated"] = True
+                comp["current_season"] = cs
         competitions.append(comp)
     return {"competitions": competitions}
 

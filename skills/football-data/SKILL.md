@@ -54,8 +54,20 @@ Derive the current year from the system prompt's date (e.g., `currentDate: 2026-
 - **If the user specifies a season**, use it as-is.
 - **If the user says "current", "latest", or doesn't specify**: Call `get_current_season(competition_id="...")` to get the active season_id. Do NOT guess or hardcode the year.
 - **Season format**: Always `{league-slug}-{year}` (e.g., `"premier-league-2025"` for the 2025-26 season). The year is the start year of the season, not the end year.
-- **MLS exception**: MLS runs spring-fall within a single calendar year. Use `get_current_season(competition_id="mls")` — don't assume MLS follows European calendar.
 - **Never hardcode a season_id.** Always derive it via `get_current_season()` or from the system date.
+
+### Calendar-year vs European leagues
+
+Two season formats exist — choose the right mental model for the league:
+
+| Format | Leagues | Season window | Example (current year 2026) |
+|--------|---------|---------------|-----------------------------|
+| Calendar-year (`jan`) | Serie A Brazil, MLS, J-League, Liga Argentina, A-League, NWSL | Runs within a single calendar year (~Jan-Dec) | `serie-a-brazil-2026` |
+| European (`aug`) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Championship, Eredivisie, Primeira Liga, Champions League, etc. | Runs Aug of year N to May/Jun of year N+1 | `premier-league-2025` (the 2025-26 season) |
+
+**Calendar-year leagues start early in the year.** The Brazilian Serie A, MLS, J-League, and Argentine Liga typically begin between January and April. Do NOT assume they follow the European calendar. If it's March 2026, the Brasileirão 2026 is likely already underway.
+
+**Fallback behavior**: When ESPN is temporarily unavailable, `get_current_season` returns a date-based estimate (marked with `"estimated": true`). This estimate is reliable — use it normally. The season_id it returns is valid for other commands like `get_season_standings`.
 
 ## Data Coverage by League
 
