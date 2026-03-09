@@ -2,7 +2,7 @@
 
 https://sports-skills.sh
 
-Open-source agent skills for live sports data and prediction markets. Built for the [Agent Skills](https://agentskills.io/specification) spec. Works with Claude Code, Cursor, Copilot, Gemini CLI, and every major AI agent.
+Open-source agent skills for live sports data and prediction markets. Built for the [Agent Skills](https://agentskills.io/specification) spec. Works with [sportsclaw](https://sportsclaw.gg), OpenClaw, Claude Code, Cursor, Copilot, Gemini CLI, and every major AI agent.
 
 **Zero API keys. Zero signup. Just works.**
 
@@ -449,7 +449,7 @@ Instructions for the AI agent...
 
 Works with every agent that supports the SKILL.md format:
 
-- sportsclaw
+- [sportsclaw](https://sportsclaw.gg)
 - Claude Code
 - OpenClaw (clawdbot / moltbot)
 - Cursor
