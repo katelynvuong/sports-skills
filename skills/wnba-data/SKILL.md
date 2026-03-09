@@ -13,6 +13,8 @@ metadata:
 
 # WNBA Data
 
+Before writing queries, consult `references/api-reference.md` for endpoints, ID conventions, and data shapes.
+
 ## Setup
 
 Before first use, check if the CLI is available:
@@ -36,170 +38,82 @@ sports-skills wnba get_standings --season=2025
 sports-skills wnba get_teams
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any data endpoint, verify:
+- Season year is derived from the system prompt's `currentDate` — never hardcoded.
+- If only a team name is provided, call `get_teams` to resolve the team ID before using team-specific commands.
+
 ## Choosing the Season
 
 Derive the current year from the system prompt's date (e.g., `currentDate: 2026-02-18` → current year is 2026).
 
 - **If the user specifies a season**, use it as-is.
-- **If the user says "current", "this season", or doesn't specify**: The WNBA season runs May–October. If the current month is May–October, use `season = current_year`. If November–April (offseason), use `season = current_year - 1` (most recently completed season).
-- **Never hardcode a season.** Always derive it from the system date.
+- **If the user says "current", "this season", or doesn't specify**: The WNBA season runs May–October. If the current month is May–October, use `season = current_year`. If November–April (offseason), use `season = current_year - 1`.
 
 ## Commands
 
-### get_scoreboard
-Get live/recent WNBA scores.
-- `date` (str, optional): Date in YYYY-MM-DD format. Defaults to today.
+| Command | Description |
+|---|---|
+| `get_scoreboard` | Live/recent WNBA scores |
+| `get_standings` | Standings by conference |
+| `get_teams` | All WNBA teams |
+| `get_team_roster` | Full roster for a team |
+| `get_team_schedule` | Schedule for a specific team |
+| `get_game_summary` | Detailed box score and scoring plays |
+| `get_leaders` | WNBA statistical leaders |
+| `get_news` | WNBA news articles |
+| `get_play_by_play` | Full play-by-play for a game |
+| `get_win_probability` | Win probability chart data |
+| `get_schedule` | Schedule for a specific date or season |
+| `get_injuries` | Injury reports across all teams |
+| `get_transactions` | Recent transactions |
+| `get_futures` | Futures/odds markets |
+| `get_team_stats` | Team statistical profile |
+| `get_player_stats` | Player statistical profile |
 
-Returns `events[]` with game info, scores, status, and competitors.
-
-### get_standings
-Get WNBA standings by conference.
-- `season` (int, optional): Season year
-
-Returns `groups[]` with Eastern/Western conferences and team standings including W-L, PCT, GB, and streak.
-
-### get_teams
-Get all WNBA teams. No parameters.
-
-Returns `teams[]` with id, name, abbreviation, logo, and location.
-
-### get_team_roster
-Get full roster for a team.
-- `team_id` (str, required): ESPN team ID (e.g., "5" for Las Vegas Aces)
-
-Returns `athletes[]` with name, position, jersey number, height, weight, experience.
-
-### get_team_schedule
-Get schedule for a specific team.
-- `team_id` (str, required): ESPN team ID
-- `season` (int, optional): Season year
-
-Returns `events[]` with opponent, date, score (if played), and venue.
-
-### get_game_summary
-Get detailed box score and scoring plays.
-- `event_id` (str, required): ESPN event ID
-
-Returns `game_info`, `competitors`, `boxscore` (stats per player), `scoring_plays`, and `leaders`.
-
-### get_leaders
-Get WNBA statistical leaders (points, rebounds, assists, etc.).
-- `season` (int, optional): Season year. Defaults to most recently completed season.
-
-Returns `categories[]` with leader rankings per stat category.
-
-### get_news
-Get WNBA news articles.
-- `team_id` (str, optional): Filter by team
-
-Returns `articles[]` with headline, description, published date, and link.
-
-### get_play_by_play
-Get full play-by-play data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns play-by-play detail including period, clock, team, play description, and scoring plays.
-
-### get_win_probability
-Get win probability chart data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns timestamped home/away win probability percentages throughout the game.
-
-### get_schedule
-Get WNBA schedule for a specific date or season.
-- `date` (str, optional): Date in YYYY-MM-DD format
-- `season` (int, optional): Season year (used only if no date provided)
-
-Returns `events[]` for the specified date.
-
-### get_injuries
-Get current WNBA injury reports across all teams. No parameters.
-
-Returns `teams[]` with per-team injury lists including player name, position, status, injury type, and detail.
-
-### get_transactions
-Get recent WNBA transactions (trades, signings, waivers).
-- `limit` (int, optional): Max transactions to return. Defaults to 50.
-
-Returns `transactions[]` with date, team, and description.
-
-### get_futures
-Get WNBA futures/odds markets (Championship winner, MVP, etc.).
-- `limit` (int, optional): Max entries per market. Defaults to 25.
-- `season_year` (int, optional): Season year. Defaults to current.
-
-Returns `futures[]` with market name and entries (team/player name + odds value).
-
-### get_team_stats
-Get full team statistical profile for a season.
-- `team_id` (str, required): ESPN team ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-### get_player_stats
-Get full player statistical profile for a season.
-- `player_id` (str, required): ESPN athlete ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-## Team IDs (Common)
-
-| Team | ID |
-|------|----|
-| Atlanta Dream | 3 |
-| Chicago Sky | 4 |
-| Connecticut Sun | 6 |
-| Dallas Wings | 8 |
-| Indiana Fever | 5 |
-| Las Vegas Aces | 9 |
-| Los Angeles Sparks | 14 |
-| Minnesota Lynx | 16 |
-| New York Liberty | 17 |
-| Phoenix Mercury | 21 |
-| Seattle Storm | 26 |
-| Washington Mystics | 30 |
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-**User: "What are today's WNBA scores?"**
-```bash
-sports-skills wnba get_scoreboard
-```
+Example 1: Today's scores
+User says: "What are today's WNBA scores?"
+Actions:
+1. Call `get_scoreboard()`
+Result: All live and recent WNBA games with scores and status
 
-**User: "Show me the WNBA standings"**
-```bash
-sports-skills wnba get_standings --season=2025
-```
+Example 2: Standings
+User says: "Show me the WNBA standings"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_standings(season=<derived_year>)`
+Result: Eastern and Western conference standings with W-L, PCT, GB
 
-**User: "Who's on the Indiana Fever roster?"**
-```bash
-sports-skills wnba get_team_roster --team_id=5
-```
+Example 3: Team roster
+User says: "Who's on the Indiana Fever roster?"
+Actions:
+1. Call `get_team_roster(team_id="5")`
+Result: Full Indiana Fever roster with name, position, jersey number
 
-**User: "Show me WNBA statistical leaders"**
-```bash
-sports-skills wnba get_leaders --season=2025
-```
+Example 4: Statistical leaders
+User says: "Show me WNBA statistical leaders"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_leaders(season=<derived_year>)`
+Result: Leaders ranked by stat category (points, rebounds, assists, etc.)
 
-**User: "Who's injured in the WNBA?"**
-```bash
-sports-skills wnba get_injuries
-```
+Example 5: Championship odds
+User says: "What are the WNBA championship odds?"
+Actions:
+1. Call `get_futures(limit=10)`
+Result: Top WNBA championship contenders with odds values
 
-**User: "What are the WNBA championship odds?"**
-```bash
-sports-skills wnba get_futures --limit=10
-```
-
-**User: "Show me A'ja Wilson's stats"**
-```bash
-sports-skills wnba get_player_stats --player_id=3149391
-```
+Example 6: Player statistics
+User says: "Show me A'ja Wilson's stats"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_player_stats(player_id="3149391", season_year=<derived_year>)`
+Result: Season stats by category with value, rank, and per-game averages
 
 ## Commands that DO NOT exist — never call these
 
@@ -208,7 +122,7 @@ sports-skills wnba get_player_stats --player_id=3149391
 - ~~`get_box_score`~~ — does not exist. Use `get_game_summary` instead.
 - ~~`get_player_ratings`~~ — does not exist. Use `get_player_stats` instead.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
 ## Error Handling
 
@@ -219,7 +133,18 @@ When a command fails, **do not surface raw errors to the user**. Instead:
 
 ## Troubleshooting
 
-- **`sports-skills` command not found**: Run `pip install sports-skills`
-- **Team not found**: Use `get_teams` to list all teams and find the correct ID
-- **No data for future games**: ESPN only returns data for completed or in-progress games
-- **Offseason (Nov–Apr)**: `get_scoreboard` returns 0 events — expected. Use `get_standings --season=2025` or `get_news` instead.
+Error: `sports-skills` command not found
+Cause: Package not installed
+Solution: Run `pip install sports-skills`
+
+Error: Team not found by ID
+Cause: Wrong or outdated ESPN team ID used
+Solution: Call `get_teams` to get the current list of all WNBA teams with their IDs
+
+Error: No data returned for a future game
+Cause: ESPN only returns data for completed or in-progress games
+Solution: Use `get_schedule` to see upcoming game details; `get_scoreboard` only covers active/recent games
+
+Error: Offseason (November–April) — scoreboard returns 0 events
+Cause: No games scheduled during the offseason
+Solution: Use `get_standings(season=<prior_year>)` or `get_news` instead

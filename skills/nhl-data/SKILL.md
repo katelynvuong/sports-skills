@@ -13,6 +13,8 @@ metadata:
 
 # NHL Data
 
+Before writing queries, consult `references/api-reference.md` for endpoints, ID conventions, and data shapes.
+
 ## Setup
 
 Before first use, check if the CLI is available:
@@ -36,6 +38,12 @@ sports-skills nhl get_standings --season=2025
 sports-skills nhl get_teams
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any data endpoint, verify:
+- Season year is derived from the system prompt's `currentDate` — never hardcoded.
+- If only a team name is provided, call `get_teams` to resolve the team ID before using team-specific commands.
+
 ## Choosing the Season
 
 Derive the current year from the system prompt's date (e.g., `currentDate: 2026-02-18` → current year is 2026).
@@ -43,166 +51,70 @@ Derive the current year from the system prompt's date (e.g., `currentDate: 2026-
 - **If the user specifies a season**, use it as-is.
 - **If the user says "current", "this season", or doesn't specify**: The NHL season runs October–June. If the current month is October–December, the active season year matches the current year. If January–June, the active season started the previous calendar year (use that year as the season).
 - **Example:** Current date is February 2026 → active season started October 2025 → use season `2025`.
-- **Never hardcode a season.** Always derive it from the system date.
 
 ## Commands
 
-### get_scoreboard
-Get live/recent NHL scores.
-- `date` (str, optional): Date in YYYY-MM-DD format. Defaults to today.
+| Command | Description |
+|---|---|
+| `get_scoreboard` | Live/recent NHL scores |
+| `get_standings` | Standings by conference and division |
+| `get_teams` | All NHL teams |
+| `get_team_roster` | Full roster for a team |
+| `get_team_schedule` | Schedule for a specific team |
+| `get_game_summary` | Detailed box score and scoring plays |
+| `get_leaders` | NHL statistical leaders |
+| `get_news` | NHL news articles |
+| `get_play_by_play` | Full play-by-play for a game |
+| `get_schedule` | Schedule for a specific date or season |
+| `get_injuries` | Injury reports across all teams |
+| `get_transactions` | Recent transactions |
+| `get_futures` | Futures/odds markets |
+| `get_team_stats` | Team statistical profile |
+| `get_player_stats` | Player statistical profile |
 
-Returns `events[]` with game info, scores, status, and competitors.
-
-### get_standings
-Get NHL standings by conference and division.
-- `season` (int, optional): Season year
-
-Returns `groups[]` with Eastern/Western conferences and division standings including W-L-OTL, points, regulation wins, goals for/against, and streak.
-
-### get_teams
-Get all NHL teams. No parameters.
-
-Returns `teams[]` with id, name, abbreviation, logo, and location.
-
-### get_team_roster
-Get full roster for a team.
-- `team_id` (str, required): ESPN team ID (e.g., "21" for Maple Leafs)
-
-Returns `athletes[]` with name, position, jersey number, height, weight, experience, birthplace, and shoots/catches.
-
-### get_team_schedule
-Get schedule for a specific team.
-- `team_id` (str, required): ESPN team ID
-- `season` (int, optional): Season year
-
-Returns `events[]` with opponent, date, score (if played), and venue.
-
-### get_game_summary
-Get detailed box score and scoring plays.
-- `event_id` (str, required): ESPN event ID
-
-Returns `game_info`, `competitors`, `boxscore` (stats per player), `scoring_plays`, and `leaders`.
-
-### get_leaders
-Get NHL statistical leaders (goals, assists, points, etc.).
-- `season` (int, optional): Season year
-
-Returns `categories[]` with leader rankings per stat category.
-
-### get_news
-Get NHL news articles.
-- `team_id` (str, optional): Filter by team
-
-Returns `articles[]` with headline, description, published date, and link.
-
-### get_play_by_play
-Get full play-by-play data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns play-by-play detail including period, clock, team, play type, and scoring plays.
-
-### get_schedule
-Get NHL schedule for a specific date or season.
-- `date` (str, optional): Date in YYYY-MM-DD format
-- `season` (int, optional): Season year (used only if no date provided)
-
-Returns `events[]` for the specified date.
-
-### get_injuries
-Get current NHL injury reports across all teams. No parameters.
-
-Returns `teams[]` with per-team injury lists including player name, position, status (Out/Day-To-Day/IR), injury type, and detail.
-
-### get_transactions
-Get recent NHL transactions (trades, signings, waivers).
-- `limit` (int, optional): Max transactions to return. Defaults to 50.
-
-Returns `transactions[]` with date, team, and description.
-
-### get_futures
-Get NHL futures/odds markets (Stanley Cup winner, Hart Trophy, etc.).
-- `limit` (int, optional): Max entries per market. Defaults to 25.
-- `season_year` (int, optional): Season year. Defaults to current.
-
-Returns `futures[]` with market name and entries (team/player name + odds value).
-
-### get_team_stats
-Get full team statistical profile for a season.
-- `team_id` (str, required): ESPN team ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-### get_player_stats
-Get full player statistical profile for a season.
-- `player_id` (str, required): ESPN athlete ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-## Team IDs (Common)
-
-| Team | ID | Team | ID |
-|------|-----|------|-----|
-| Anaheim Ducks | 25 | Nashville Predators | 27 |
-| Boston Bruins | 1 | New Jersey Devils | 11 |
-| Buffalo Sabres | 2 | New York Islanders | 12 |
-| Calgary Flames | 3 | New York Rangers | 13 |
-| Carolina Hurricanes | 7 | Ottawa Senators | 14 |
-| Chicago Blackhawks | 4 | Philadelphia Flyers | 15 |
-| Colorado Avalanche | 17 | Pittsburgh Penguins | 16 |
-| Columbus Blue Jackets | 29 | San Jose Sharks | 18 |
-| Dallas Stars | 9 | Seattle Kraken | 124292 |
-| Detroit Red Wings | 5 | St. Louis Blues | 19 |
-| Edmonton Oilers | 6 | Tampa Bay Lightning | 20 |
-| Florida Panthers | 26 | Toronto Maple Leafs | 21 |
-| Los Angeles Kings | 8 | Utah Mammoth | 129764 |
-| Minnesota Wild | 30 | Vancouver Canucks | 22 |
-| Montreal Canadiens | 10 | Vegas Golden Knights | 37 |
-| | | Washington Capitals | 23 |
-| | | Winnipeg Jets | 28 |
-
-**Tip:** Use `get_teams` to get the full, accurate list of team IDs.
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-**User: "What are today's NHL scores?"**
-```bash
-sports-skills nhl get_scoreboard
-```
+Example 1: Today's scores
+User says: "What are today's NHL scores?"
+Actions:
+1. Call `get_scoreboard()`
+Result: All live and recent NHL games with scores and status
 
-**User: "Show me the Eastern Conference standings"**
-```bash
-sports-skills nhl get_standings --season=2025
-```
-Then filter results for Eastern Conference.
+Example 2: Conference standings
+User says: "Show me the Eastern Conference standings"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_standings(season=<derived_year>)`
+3. Filter results for Eastern Conference
+Result: Eastern Conference standings with W-L-OTL, points, regulation wins
 
-**User: "Who's on the Maple Leafs roster?"**
-```bash
-sports-skills nhl get_team_roster --team_id=21
-```
+Example 3: Team roster
+User says: "Who's on the Maple Leafs roster?"
+Actions:
+1. Call `get_team_roster(team_id="21")`
+Result: Full Maple Leafs roster with name, position, jersey number, shoots/catches
 
-**User: "Show me the full box score for last night's Bruins game"**
-1. Find the event_id from `get_scoreboard --date=YYYY-MM-DD`
-2. Call `get_game_summary --event_id=<id>` for full box score
+Example 4: Game box score
+User says: "Show me the full box score for last night's Bruins game"
+Actions:
+1. Call `get_scoreboard(date="<yesterday>")` to find the event_id
+2. Call `get_game_summary(event_id=<id>)` for full box score
+Result: Complete box score with per-player stats and scoring plays
 
-**User: "Who's injured on the Maple Leafs?"**
-```bash
-sports-skills nhl get_injuries
-```
-Then filter results for Toronto Maple Leafs (team_id=21).
+Example 5: Stanley Cup odds
+User says: "What are the Stanley Cup odds?"
+Actions:
+1. Call `get_futures(limit=10)`
+Result: Top Stanley Cup contenders with odds values
 
-**User: "What are the Stanley Cup odds?"**
-```bash
-sports-skills nhl get_futures --limit=10
-```
-
-**User: "Show me Connor McDavid's stats"**
-```bash
-sports-skills nhl get_player_stats --player_id=3895074
-```
+Example 6: Player statistics
+User says: "Show me Connor McDavid's stats"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_player_stats(player_id="3895074", season_year=<derived_year>)`
+Result: Season stats by category with value, rank, and per-game averages
 
 ## Commands that DO NOT exist — never call these
 
@@ -211,7 +123,7 @@ sports-skills nhl get_player_stats --player_id=3895074
 - ~~`get_box_score`~~ — does not exist. Use `get_game_summary` instead.
 - ~~`get_player_ratings`~~ — does not exist. Use `get_player_stats` instead.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
 ## Error Handling
 
@@ -222,7 +134,18 @@ When a command fails, **do not surface raw errors to the user**. Instead:
 
 ## Troubleshooting
 
-- **`sports-skills` command not found**: Run `pip install sports-skills`
-- **Team not found**: Use `get_teams` to list all teams and find the correct ID
-- **No data for future games**: ESPN only returns data for completed or in-progress games
-- **Offseason**: `get_scoreboard` returns 0 events — expected. Use `get_standings` or `get_news` instead.
+Error: `sports-skills` command not found
+Cause: Package not installed
+Solution: Run `pip install sports-skills`
+
+Error: Team not found by ID
+Cause: Wrong or outdated ESPN team ID used
+Solution: Call `get_teams` to get the current list of all NHL teams with their IDs (expansion teams like the Seattle Kraken and Utah Mammoth have non-sequential IDs)
+
+Error: No data returned for a future game
+Cause: ESPN only returns data for completed or in-progress games
+Solution: Use `get_schedule` to see upcoming game details; `get_scoreboard` only covers active/recent games
+
+Error: Offseason — scoreboard returns 0 events
+Cause: No games scheduled during the offseason (July–September)
+Solution: Use `get_standings` or `get_news` instead; use `get_schedule` to find when the season resumes

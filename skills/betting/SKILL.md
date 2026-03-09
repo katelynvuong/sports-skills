@@ -13,6 +13,8 @@ metadata:
 
 # Betting Analysis
 
+Before writing queries, consult `references/api-reference.md` for odds formats, command parameters, and key concepts.
+
 ## Quick Start
 
 ```bash
@@ -37,155 +39,105 @@ betting.parlay_analysis(legs="0.58,0.62,0.55", parlay_odds=600)
 betting.line_movement(open_odds=-140, close_odds=-160)
 ```
 
-## Odds Formats
+## CRITICAL: Before Any Analysis
 
-| Format | Example | Description |
-|---|---|---|
-| American | `-150`, `+130` | US sportsbook standard. Negative = favorite, positive = underdog |
-| Decimal | `1.67`, `2.30` | European standard. Payout per $1 (includes stake) |
-| Probability | `0.60`, `0.43` | Direct implied probability (0-1). Polymarket uses this format |
-
-**Conversion rules:**
-- American negative: prob = -odds / (-odds + 100). Example: -150 → 150/250 = 0.600
-- American positive: prob = 100 / (odds + 100). Example: +130 → 100/230 = 0.435
-- Decimal: prob = 1 / odds. Example: 1.67 → 0.599
-- Kalshi prices (0-100 integer): divide by 100 to get probability format
-
-## Commands
-
-| Command | Required | Optional | Description |
-|---|---|---|---|
-| `convert_odds` | odds, from_format | | Convert between American, decimal, probability |
-| `devig` | odds | format | Remove vig from sportsbook odds → fair probabilities |
-| `find_edge` | fair_prob, market_prob | | Compute edge, EV, and Kelly from two probabilities |
-| `kelly_criterion` | fair_prob, market_prob | | Kelly fraction for optimal bet sizing |
-| `evaluate_bet` | book_odds, market_prob | book_format, outcome | Full pipeline: devig → edge → Kelly |
-| `find_arbitrage` | market_probs | labels | Detect arbitrage across outcomes from multiple sources |
-| `parlay_analysis` | legs, parlay_odds | odds_format, correlation | Multi-leg parlay EV and Kelly analysis |
-| `line_movement` | | open_odds, close_odds, open_line, close_line, market_type | Analyze open-to-close line movement |
+CRITICAL: Before calling any analysis command, verify:
+- Odds format is correctly identified (american, decimal, or probability).
+- ESPN odds are de-vigged with `devig` before computing edge vs prediction market prices.
+- This module computes — it does not fetch. Obtain odds from sport-specific skills or polymarket/kalshi first.
 
 ## Workflows
 
-### Workflow: Compare ESPN vs Polymarket/Kalshi
+### Compare ESPN vs Polymarket/Kalshi
 
-This is the primary workflow. The agent already has odds from ESPN and a prediction market — no user estimation needed.
+1. Get ESPN moneyline odds (e.g., from `nba get_scoreboard`): Home: `-150`, Away: `+130`
+2. Get Polymarket/Kalshi price for the same outcome (e.g., home at `0.52`)
+3. De-vig: `devig --odds=-150,+130 --format=american` → Fair: Home 57.9%, Away 42.1%
+4. Compare: `find_edge --fair_prob=0.579 --market_prob=0.52` → Edge: 5.9%, EV: 11.3%
+5. Or all in one step: `evaluate_bet --book_odds=-150,+130 --market_prob=0.52`
 
-1. Get ESPN moneyline odds for a game (e.g., from `nba get_scoreboard`):
-   - Home: `-150`, Away: `+130`
-2. Get Polymarket/Kalshi price for the same outcome (e.g., home team at `0.52`).
-3. De-vig the ESPN odds to get fair probabilities:
-   `devig --odds=-150,+130 --format=american`
-   → Fair: Home 57.9%, Away 42.1% (removed ~3.5% vig)
-4. Compare fair prob to market price:
-   `find_edge --fair_prob=0.579 --market_prob=0.52`
-   → Edge: 5.9%, EV: 11.3%, Kelly: 0.123
-5. Or do it all in one step:
-   `evaluate_bet --book_odds=-150,+130 --market_prob=0.52`
+### Arbitrage Detection
 
-### Workflow: Arbitrage Detection
-
-Spot guaranteed-profit opportunities when prices across sources don't sum to 100%.
-
-1. Get the best available price per outcome from different sources:
-   - Source A (Polymarket): Home team at 0.48
-   - Source B (Kalshi): Away team at 0.49
+1. Get best price per outcome from different sources (Polymarket home at 0.48, Kalshi away at 0.49)
 2. `find_arbitrage --market_probs=0.48,0.49 --labels=home,away`
-   → Total implied: 0.97 (< 1.0 = arbitrage!)
-   → Guaranteed ROI: 3.09%
-   → Allocation: 49.5% on home, 50.5% on away
-3. For 3-way football markets: `find_arbitrage --market_probs=0.40,0.25,0.30 --labels=home,draw,away`
+3. Total implied 0.97 (< 1.0) → arbitrage found, guaranteed ROI: 3.09%
 
-### Workflow: Parlay Evaluation
+### Parlay Evaluation
 
-Evaluate multi-leg parlays to see if the offered odds are +EV.
-
-1. De-vig each leg to get fair probabilities:
-   - Leg 1: `devig --odds=-150,+130` → fair prob 0.58
-   - Leg 2: `devig --odds=-130,+110` → fair prob 0.55
-   - Leg 3: `devig --odds=-110,-110` → fair prob 0.50
+1. De-vig each leg: Leg 1 → 0.58, Leg 2 → 0.55, Leg 3 → 0.50
 2. `parlay_analysis --legs=0.58,0.55,0.50 --parlay_odds=600`
-   → Combined fair: 15.95%, offered +600 implies 14.29%
-   → Edge: 1.66%, +EV
-3. If legs are correlated (e.g. same-game parlay): add `--correlation=0.1` — this increases combined probability since correlated events are more likely to co-occur
+3. Returns combined fair probability, edge, and Kelly fraction
 
-### Workflow: Line Movement from ESPN
+### Line Movement Analysis
 
-Quantify how a line has moved and what it implies about sharp money.
-
-1. Get ESPN odds for a game — both open and close lines are available:
-   - Open moneyline: -140, Close moneyline: -160
-   - Open spread: -6.5, Close spread: -7.5
+1. Get ESPN open and close lines: Open -140, Close -160
 2. `line_movement --open_odds=-140 --close_odds=-160`
-   → Probability shift: +3.21% toward favorite
-   → Classification: sharp_action
-3. With spread too: `line_movement --open_odds=-140 --close_odds=-160 --open_line=-6.5 --close_line=-7.5`
-   → If ML and spread move same direction: sharp action confirmed
-   → If they move opposite: reverse line movement (public vs sharp split)
-
-### Workflow: De-Vig Sportsbook Odds
-
-Strip the vig/juice from DraftKings odds to see the "true" implied probabilities.
-
-1. `devig --odds=-110,-110 --format=american`
-   → Each side is 50.0% fair (standard -110/-110 spread/total)
-2. `devig --odds=-200,+170 --format=american`
-   → Favorite: 65.2%, Underdog: 34.8%
-3. `devig --odds=-150,+300,+400 --format=american` (3-way football)
-   → Home: 47.3%, Draw: 19.8%, Away: 15.7%
-
-### Workflow: Odds Conversion
-
-Convert odds from one format to another.
-
-1. `convert_odds --odds=-150 --from_format=american`
-   → Probability: 60.0%, Decimal: 1.6667
-2. `convert_odds --odds=2.50 --from_format=decimal`
-   → Probability: 40.0%, American: +150
+3. Returns probability shift, direction, and classification (sharp_action, steam_move, etc.)
 
 ## Examples
 
-User: "Is there edge on the Lakers game? ESPN has them at -150 and Polymarket has them at 52 cents"
-1. `devig --odds=-150,+130 --format=american` → Fair home prob ~58%
-2. `find_edge --fair_prob=0.58 --market_prob=0.52` → Edge ~6%, positive EV
-3. `kelly_criterion --fair_prob=0.58 --market_prob=0.52` → Kelly fraction
-4. Present: edge, EV per dollar, recommended bet size as % of bankroll
+Example 1: Edge check using ESPN and Polymarket prices
+User says: "Is there edge on the Lakers game? ESPN has them at -150 and Polymarket has them at 52 cents"
+Actions:
+1. Call `devig(odds="-150,+130", format="american")` → fair home probability ~58%
+2. Call `find_edge(fair_prob=0.58, market_prob=0.52)` → edge ~6%, positive EV
+3. Call `kelly_criterion(fair_prob=0.58, market_prob=0.52)` → optimal bet fraction
+Result: Present edge percentage, EV per dollar, and recommended bet size as % of bankroll
 
-User: "Can I arb this? Polymarket has home at 48 cents and Kalshi has away at 49 cents"
-1. `find_arbitrage --market_probs=0.48,0.49 --labels=home,away`
-2. If arbitrage_found: present allocation percentages and guaranteed ROI
-3. If not: present the overround and explain there's no guaranteed profit
+Example 2: Arbitrage opportunity detection
+User says: "Can I arb this? Polymarket has home at 48 cents and Kalshi has away at 49 cents"
+Actions:
+1. Call `find_arbitrage(market_probs="0.48,0.49", labels="home,away")`
+2. Check `arbitrage_found` in result
+Result: If arbitrage: present allocation percentages and guaranteed ROI. If not: present overround and explain no guaranteed profit
 
-User: "Is this 3-leg parlay at +600 worth it?"
-1. De-vig each leg to get fair probs (e.g. 0.58, 0.62, 0.55)
-2. `parlay_analysis --legs=0.58,0.62,0.55 --parlay_odds=600`
-3. Present: combined fair prob, edge, EV, +EV or -EV, Kelly fraction
+Example 3: Parlay evaluation
+User says: "Is this 3-leg parlay at +600 worth it?"
+Actions:
+1. De-vig each leg to get fair probabilities (e.g., 0.58, 0.62, 0.55)
+2. Call `parlay_analysis(legs="0.58,0.62,0.55", parlay_odds=600)`
+Result: Present combined fair probability, edge, EV, +EV or -EV verdict, and Kelly fraction
 
-User: "The line moved from -140 to -160, what does that mean?"
-1. `line_movement --open_odds=-140 --close_odds=-160`
-2. Present: probability shift, direction, magnitude, classification (sharp action, steam move, etc.)
+Example 4: Line movement interpretation
+User says: "The line moved from -140 to -160, what does that mean?"
+Actions:
+1. Call `line_movement(open_odds=-140, close_odds=-160)`
+Result: Present probability shift, direction, magnitude, and classification (sharp action, steam move, etc.)
 
-User: "What are the true odds for this spread? Both sides are -110"
-1. `devig --odds=-110,-110 --format=american`
-2. Present: each side is 50% fair probability, vig is ~4.5%
+Example 5: De-vig a standard spread
+User says: "What are the true odds for this spread? Both sides are -110"
+Actions:
+1. Call `devig(odds="-110,-110", format="american")`
+Result: Present each side as 50% fair probability, vig is ~4.5%
 
-User: "Convert -200 to implied probability"
-1. `convert_odds --odds=-200 --from_format=american`
-2. Present: 66.7% implied probability, 1.50 decimal odds
+Example 6: Odds format conversion
+User says: "Convert -200 to implied probability"
+Actions:
+1. Call `convert_odds(odds=-200, from_format="american")`
+Result: Present 66.7% implied probability and 1.50 decimal odds
 
 ## Commands that DO NOT exist — never call these
 
-- ~~`get_odds`~~ — does not exist. This module analyzes odds, it doesn't fetch them. Use nba-data/nfl-data/etc. for ESPN odds, or polymarket/kalshi for prediction market prices.
+- ~~`get_odds`~~ — does not exist. This module analyzes odds; it does not fetch them. Use nba-data/nfl-data/etc. for ESPN odds, or polymarket/kalshi for prediction market prices.
 - ~~`calculate_ev`~~ — does not exist. Use `find_edge` or `evaluate_bet` instead.
 - ~~`compare_markets`~~ — does not exist. Use the `markets` skill for cross-platform comparison.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in `references/api-reference.md`, it does not exist.
 
-## Key Concepts
+## Troubleshooting
 
-- **Vig/Juice**: The sportsbook's margin. A -110/-110 line implies 52.4% + 52.4% = 104.8% total, meaning 4.8% overround. De-vigging removes this to get fair probabilities.
-- **Edge**: The difference between your estimated true probability and the market price. Positive edge = profitable in expectation.
-- **Kelly Criterion**: Optimal bet sizing that maximizes long-term growth. f* = (fair_prob - market_prob) / (1 - market_prob). For conservative sizing, multiply the Kelly fraction by 0.5 (half-Kelly) or 0.25 (quarter-Kelly).
-- **Expected Value (EV)**: Average return per dollar bet. EV = fair_prob / market_prob - 1.
-- **Arbitrage**: When prices across sources don't sum to 100%, you can bet all outcomes and guarantee profit regardless of the result.
-- **Parlay**: A multi-leg bet where all legs must win. Combined probability = product of individual leg probabilities. Higher risk, higher reward. Check if the offered odds exceed the fair combined odds.
-- **Line Movement**: How odds change between open and close. Large moves toward one side suggest sharp/professional money. Reverse line movement (moneyline and spread moving opposite directions) suggests a public vs sharp split.
+Error: `ValueError: unknown format` when calling `convert_odds`
+Cause: The `from_format` parameter is not one of `american`, `decimal`, or `probability`
+Solution: Use exactly `american`, `decimal`, or `probability` as the format string
+
+Error: `find_edge` returns negative EV when a positive edge is expected
+Cause: Fair probability and market probability may be reversed, or de-vigging was skipped
+Solution: Run `devig` on sportsbook odds first, then pass the de-vigged `fair_prob` to `find_edge`
+
+Error: `find_arbitrage` shows no arbitrage even when prices seem low
+Cause: Prices may sum to more than 1.0 when all outcomes are correctly included
+Solution: Verify you are using the correct probabilities for all outcomes; check `total_implied` in the result
+
+Error: Kelly fraction is very high (greater than 0.5)
+Cause: Edge estimate is very large — often from a miscalculated fair probability
+Solution: Use half-Kelly or quarter-Kelly for conservative sizing. Re-verify fair probability via `devig`

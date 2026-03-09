@@ -13,6 +13,8 @@ metadata:
 
 # NBA Data
 
+Before writing queries, consult `references/api-reference.md` for endpoints, ID conventions, and data shapes.
+
 ## Setup
 
 Before first use, check if the CLI is available:
@@ -36,185 +38,85 @@ sports-skills nba get_standings --season=2025
 sports-skills nba get_teams
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any data endpoint, verify:
+- Season year is derived from the system prompt's `currentDate` — never hardcoded.
+- If only a team name is provided, call `get_teams` to resolve the team ID before using team-specific commands.
+
 ## Choosing the Season
 
 Derive the current year from the system prompt's date (e.g., `currentDate: 2026-02-18` → current year is 2026).
 
 - **If the user specifies a season**, use it as-is.
 - **If the user says "current", "this season", or doesn't specify**: The NBA season runs October–June. If the current month is October–December, the active season year matches the current year. If January–June, the active season started the previous calendar year (use that year as the season).
-- **Never hardcode a season.** Always derive it from the system date.
 
 ## Commands
 
-### get_scoreboard
-Get live/recent NBA scores.
-- `date` (str, optional): Date in YYYY-MM-DD format. Defaults to today.
+| Command | Description |
+|---|---|
+| `get_scoreboard` | Live/recent NBA scores |
+| `get_standings` | Standings by conference |
+| `get_teams` | All 30 NBA teams |
+| `get_team_roster` | Full roster for a team |
+| `get_team_schedule` | Schedule for a specific team |
+| `get_game_summary` | Detailed box score and scoring plays |
+| `get_leaders` | NBA statistical leaders |
+| `get_news` | NBA news articles |
+| `get_play_by_play` | Full play-by-play for a game |
+| `get_win_probability` | Win probability chart data |
+| `get_schedule` | Schedule for a specific date or season |
+| `get_injuries` | Injury reports across all teams |
+| `get_transactions` | Recent transactions |
+| `get_futures` | Futures/odds markets |
+| `get_depth_chart` | Depth chart for a team |
+| `get_team_stats` | Team statistical profile |
+| `get_player_stats` | Player statistical profile |
 
-Returns `events[]` with game info, scores, status, and competitors.
-
-### get_standings
-Get NBA standings by conference.
-- `season` (int, optional): Season year
-
-Returns `groups[]` with Eastern/Western conferences and team standings including W-L, PCT, GB, streak, home/away/conference records, and PPG.
-
-### get_teams
-Get all 30 NBA teams. No parameters.
-
-Returns `teams[]` with id, name, abbreviation, logo, and location.
-
-### get_team_roster
-Get full roster for a team.
-- `team_id` (str, required): ESPN team ID (e.g., "13" for Lakers)
-
-Returns `athletes[]` with name, position, jersey number, height, weight, experience.
-
-### get_team_schedule
-Get schedule for a specific team.
-- `team_id` (str, required): ESPN team ID
-- `season` (int, optional): Season year
-
-Returns `events[]` with opponent, date, score (if played), and venue.
-
-### get_game_summary
-Get detailed box score and scoring plays.
-- `event_id` (str, required): ESPN event ID
-
-Returns `game_info`, `competitors`, `boxscore` (stats per player), `scoring_plays`, and `leaders`.
-
-### get_leaders
-Get NBA statistical leaders (points, rebounds, assists, etc.).
-- `season` (int, optional): Season year
-
-Returns `categories[]` with leader rankings per stat category.
-
-### get_news
-Get NBA news articles.
-- `team_id` (str, optional): Filter by team
-
-Returns `articles[]` with headline, description, published date, and link.
-
-### get_play_by_play
-Get full play-by-play data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns play-by-play detail including period, clock, team, play description, and scoring plays.
-
-### get_win_probability
-Get win probability chart data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns timestamped home/away win probability percentages throughout the game.
-
-### get_schedule
-Get NBA schedule for a specific date or season.
-- `date` (str, optional): Date in YYYY-MM-DD format
-- `season` (int, optional): Season year (used only if no date provided)
-
-Returns `events[]` for the specified date.
-
-### get_injuries
-Get current NBA injury reports across all teams. No parameters.
-
-Returns `teams[]` with per-team injury lists including player name, position, status (Out/Doubtful/Questionable/Day-To-Day), injury type, and detail.
-
-### get_transactions
-Get recent NBA transactions (trades, signings, waivers).
-- `limit` (int, optional): Max transactions to return. Defaults to 50.
-
-Returns `transactions[]` with date, team, and description.
-
-### get_futures
-Get NBA futures/odds markets (Championship winner, MVP, etc.).
-- `limit` (int, optional): Max entries per market. Defaults to 25.
-- `season_year` (int, optional): Season year. Defaults to current.
-
-Returns `futures[]` with market name and entries (team/player name + odds value).
-
-### get_depth_chart
-Get depth chart for a specific team.
-- `team_id` (str, required): ESPN team ID
-
-Returns `charts[]` with positional depth and player depth order.
-
-### get_team_stats
-Get full team statistical profile for a season.
-- `team_id` (str, required): ESPN team ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 1=preseason, 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-### get_player_stats
-Get full player statistical profile for a season.
-- `player_id` (str, required): ESPN athlete ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 1=preseason, 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-## Team IDs (Common)
-
-| Team | ID | Team | ID |
-|------|-----|------|-----|
-| Atlanta Hawks | 1 | Memphis Grizzlies | 29 |
-| Boston Celtics | 2 | Miami Heat | 14 |
-| Brooklyn Nets | 17 | Milwaukee Bucks | 15 |
-| Charlotte Hornets | 30 | Minnesota Timberwolves | 16 |
-| Chicago Bulls | 4 | New Orleans Pelicans | 3 |
-| Cleveland Cavaliers | 5 | New York Knicks | 18 |
-| Dallas Mavericks | 6 | Oklahoma City Thunder | 25 |
-| Denver Nuggets | 7 | Orlando Magic | 19 |
-| Detroit Pistons | 8 | Philadelphia 76ers | 20 |
-| Golden State Warriors | 9 | Phoenix Suns | 21 |
-| Houston Rockets | 10 | Portland Trail Blazers | 22 |
-| Indiana Pacers | 11 | Sacramento Kings | 23 |
-| LA Clippers | 12 | San Antonio Spurs | 24 |
-| Los Angeles Lakers | 13 | Toronto Raptors | 28 |
-| Utah Jazz | 26 | Washington Wizards | 27 |
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-**User: "What are today's NBA scores?"**
-```bash
-sports-skills nba get_scoreboard
-```
+Example 1: Today's scores
+User says: "What are today's NBA scores?"
+Actions:
+1. Call `get_scoreboard()`
+Result: All live and recent NBA games with scores and status
 
-**User: "Show me the Western Conference standings"**
-```bash
-sports-skills nba get_standings --season=2025
-```
-Then filter results for Western Conference.
+Example 2: Conference standings
+User says: "Show me the Western Conference standings"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_standings(season=<derived_year>)`
+3. Filter results for Western Conference
+Result: Western Conference standings table with W-L, PCT, GB per team
 
-**User: "Who's on the Lakers roster?"**
-```bash
-sports-skills nba get_team_roster --team_id=13
-```
+Example 3: Team roster
+User says: "Who's on the Lakers roster?"
+Actions:
+1. Call `get_team_roster(team_id="13")`
+Result: Full Lakers roster with name, position, jersey number, height, weight
 
-**User: "Show me the full box score for last night's Celtics game"**
-1. Find the event_id from `get_scoreboard --date=YYYY-MM-DD`
-2. Call `get_game_summary --event_id=<id>` for full box score
+Example 4: Game box score
+User says: "Show me the full box score for last night's Celtics game"
+Actions:
+1. Call `get_scoreboard(date="<yesterday>")` to find the event_id
+2. Call `get_game_summary(event_id=<id>)` for full box score
+Result: Complete box score with per-player stats and scoring plays
 
-**User: "Who's injured on the Lakers?"**
-```bash
-sports-skills nba get_injuries
-```
-Then filter results for Los Angeles Lakers (team_id=13).
+Example 5: Injury report
+User says: "Who's injured on the Lakers?"
+Actions:
+1. Call `get_injuries()`
+2. Filter results for Los Angeles Lakers (team_id=13)
+Result: Lakers injury list with player name, position, status, and injury type
 
-**User: "What are the NBA championship odds?"**
-```bash
-sports-skills nba get_futures --limit=10
-```
-
-**User: "Show me LeBron's stats this season"**
-```bash
-sports-skills nba get_player_stats --player_id=1966
-```
-
-**User: "How do the Celtics rank in team stats?"**
-```bash
-sports-skills nba get_team_stats --team_id=2
-```
+Example 6: Player statistics
+User says: "Show me LeBron's stats this season"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_player_stats(player_id="1966", season_year=<derived_year>)`
+Result: Season stats by category with value, rank, and per-game averages
 
 ## Commands that DO NOT exist — never call these
 
@@ -223,7 +125,7 @@ sports-skills nba get_team_stats --team_id=2
 - ~~`get_box_score`~~ — does not exist. Use `get_game_summary` instead.
 - ~~`get_player_ratings`~~ — does not exist. Use `get_player_stats` instead.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
 ## Error Handling
 
@@ -234,7 +136,18 @@ When a command fails, **do not surface raw errors to the user**. Instead:
 
 ## Troubleshooting
 
-- **`sports-skills` command not found**: Run `pip install sports-skills`
-- **Team not found**: Use `get_teams` to list all teams and find the correct ID
-- **No data for future games**: ESPN only returns data for completed or in-progress games
-- **Offseason**: `get_scoreboard` returns 0 events — expected. Use `get_standings` or `get_news` instead.
+Error: `sports-skills` command not found
+Cause: Package not installed
+Solution: Run `pip install sports-skills`
+
+Error: Team not found by ID
+Cause: Wrong or outdated ESPN team ID used
+Solution: Call `get_teams` to get the current list of all 30 NBA teams with their IDs
+
+Error: No data returned for a future game
+Cause: ESPN only returns data for completed or in-progress games
+Solution: Use `get_schedule` to see upcoming game details; `get_scoreboard` only covers active/recent games
+
+Error: Offseason — scoreboard returns 0 events
+Cause: No games scheduled during the offseason (July–September)
+Solution: Use `get_standings` or `get_news` instead; use `get_schedule` to find when the season resumes

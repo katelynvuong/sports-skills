@@ -13,6 +13,8 @@ metadata:
 
 # Sports News
 
+Before writing queries, consult `references/api-reference.md` for command parameters and `references/rss-feeds.md` for curated feed URLs.
+
 ## Quick Start
 
 Prefer the CLI — it avoids Python import path issues:
@@ -29,64 +31,64 @@ articles = news.fetch_items(google_news=True, query="Arsenal transfer news", lim
 feed = news.fetch_feed(url="https://feeds.bbci.co.uk/sport/football/rss.xml")
 ```
 
-## Important Notes
+## CRITICAL: Before Any Query
 
-- **`google_news=True` requires a `query`.** Without a query, Google News has nothing to search.
-- **`url` and `google_news` are mutually exclusive.** Use one or the other, not both.
-- **Always use `sort_by_date=True`** for recency queries to show newest articles first.
-- Before complex fetches, run the parameter validator: `bash scripts/validate_params.sh [args]`
-
-*For detailed reference data, see the files in the `references/` directory.*
+CRITICAL: Before calling any news command, verify:
+- Dates are derived from the system prompt's `currentDate` — never hardcoded.
+- `google_news=True` is always paired with a `query` parameter.
+- `sort_by_date=True` is set for any "recent" or "latest" query.
 
 ## Choosing Dates
 
 Derive the current date from the system prompt's date (e.g., `currentDate: 2026-02-16` means today is 2026-02-16).
 
-- **If the user specifies a date range**, use it as-is.
-- **If the user says "recent", "latest", "this week", or doesn't specify a timeframe**: Derive `after` from the system date. For "this week", use `after = today - 7 days`. For "recent" or "latest", use `after = today - 3 days`.
-- **Never hardcode dates in commands.** Always derive them from the system date.
-- **Always use `sort_by_date=True`** for recency queries to show newest articles first.
+- **"this week"**: `after = today - 7 days`
+- **"recent" or "latest"**: `after = today - 3 days`
+- **Specific date range**: use as-is
 
 ## Commands
 
 | Command | Required | Optional | Description |
 |---|---|---|---|
 | `fetch_feed` | url | | Fetch an RSS/Atom feed by URL |
-| `fetch_items` | | google_news, query, url, limit, after, before, sort_by_date | Fetch news items from Google News or an RSS feed |
-
-- **`fetch_items` with `google_news=True`**: requires `query`. Returns Google News articles matching the search.
-- **`fetch_items` with `url`**: fetches items from a specific RSS/Atom feed URL.
-- **`fetch_feed`**: fetches and returns the full feed metadata plus recent entries.
+| `fetch_items` | | google_news, query, url, limit, after, before, sort_by_date | Fetch news from Google News or an RSS feed |
 
 ## Workflows
 
-### Workflow: Breaking News Check
+### Breaking News Check
 1. `fetch_items --google_news --query="<topic>" --limit=5 --sort_by_date=True`
 2. Present headlines with source and date.
 
-### Workflow: Topic Deep-Dive
+### Topic Deep-Dive
 1. `fetch_items --google_news --query="<topic>" --after=<7_days_ago> --sort_by_date=True --limit=10`
 2. For curated sources, also try `fetch_feed --url="<rss_url>"`.
 3. Cross-reference both for comprehensive coverage.
 
-### Workflow: Weekly Sports Roundup
+### Weekly Sports Roundup
 1. For each sport of interest, `fetch_items --google_news --query="<sport> results" --after=<7_days_ago> --limit=5`.
 2. Aggregate and present by sport.
 
 ## Examples
 
-User: "What's the latest Arsenal transfer news?"
-1. Call `fetch_items(google_news=True, query="Arsenal transfer news", limit=10)`
-2. Present headlines with source, date, and links
+Example 1: Transfer news search
+User says: "What's the latest Arsenal transfer news?"
+Actions:
+1. Derive `after` from `currentDate`: today minus 3 days
+2. Call `fetch_items(google_news=True, query="Arsenal transfer news", after=<derived_date>, sort_by_date=True, limit=10)`
+Result: Recent Arsenal transfer headlines with source, date, and links
 
-User: "Show me BBC Sport football headlines"
+Example 2: Curated RSS feed
+User says: "Show me BBC Sport football headlines"
+Actions:
 1. Call `fetch_feed(url="https://feeds.bbci.co.uk/sport/football/rss.xml")`
-2. Present feed title, last updated, and recent entries
+Result: BBC Sport football feed title, last updated, and recent articles
 
-User: "Any Champions League news from this week?"
-1. Derive `after` from system date: today minus 7 days
+Example 3: Date-filtered news
+User says: "Any Champions League news from this week?"
+Actions:
+1. Derive `after` from `currentDate`: today minus 7 days
 2. Call `fetch_items(google_news=True, query="Champions League", after=<derived_date>, sort_by_date=True, limit=10)`
-3. Present articles filtered to the last 7 days, sorted newest first
+Result: Champions League articles from the last 7 days, sorted newest first
 
 ## Commands that DO NOT exist — never call these
 
@@ -94,11 +96,18 @@ User: "Any Champions League news from this week?"
 - ~~`search_news`~~ — does not exist. Use `fetch_items` with `google_news=True` and a `query` parameter.
 - ~~`get_headlines`~~ — does not exist. Use `fetch_items` with `google_news=True`.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
-## Error Handling & Fallbacks
+## Troubleshooting
 
-- If Google News returns empty, ensure `google_news=True` AND `query` are both set. Try broader keywords.
-- If RSS feed returns error, feed may be down. Use Google News as fallback.
-- If articles are old, use `after` parameter with date and `sort_by_date=True`.
-- **Never fabricate news headlines or article content.** If no results, state so.
+Error: Google News returns empty results
+Cause: `query` is missing or too narrow, or `google_news=True` is not set
+Solution: Ensure `google_news=True` AND a `query` are both set. Try broader keywords (e.g., "Arsenal" instead of "Arsenal vs Chelsea goal")
+
+Error: RSS feed returns an error
+Cause: The feed URL may be temporarily down or the URL format has changed
+Solution: Use Google News (`fetch_items` with `google_news=True`) as a fallback for the same topic
+
+Error: Articles returned are old despite using "recent" query
+Cause: `sort_by_date=True` is not set, or the `after` date filter is missing
+Solution: Add `sort_by_date=True` and `after=<today - 3 days>` to ensure newest articles appear first

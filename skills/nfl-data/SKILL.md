@@ -13,6 +13,8 @@ metadata:
 
 # NFL Data
 
+Before writing queries, consult `references/api-reference.md` for endpoints, ID conventions, and data shapes.
+
 ## Setup
 
 Before first use, check if the CLI is available:
@@ -48,188 +50,85 @@ scores = nfl.get_scoreboard({})
 standings = nfl.get_standings({"params": {"season": "2025"}})
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any data endpoint, verify:
+- Season year is derived from the system prompt's `currentDate` — never hardcoded.
+- If only a team name is provided, call `get_teams` to resolve the team ID before using team-specific commands.
+
 ## Choosing the Season
 
 Derive the current year from the system prompt's date (e.g., `currentDate: 2026-02-16` → current year is 2026).
 
 - **If the user specifies a season**, use it as-is.
 - **If the user says "current", "this season", or doesn't specify**: The NFL season runs September–February. If the current month is March–August, use `season = current_year` (upcoming season). If September–February, the active season started in the previous calendar year if you're in Jan/Feb, otherwise current year.
-- **Never hardcode a season.** Always derive it from the system date.
 
 ## Commands
 
-### get_scoreboard
-Get live/recent NFL scores.
-- `date` (str, optional): Date in YYYY-MM-DD format
-- `week` (int, optional): Week number (1-18 regular season, 19-23 postseason)
+| Command | Description |
+|---|---|
+| `get_scoreboard` | Live/recent NFL scores |
+| `get_standings` | Standings by conference and division |
+| `get_teams` | All 32 NFL teams |
+| `get_team_roster` | Full roster for a team |
+| `get_team_schedule` | Schedule for a specific team |
+| `get_game_summary` | Detailed box score and scoring plays |
+| `get_leaders` | NFL statistical leaders |
+| `get_news` | NFL news articles |
+| `get_play_by_play` | Full play-by-play for a game |
+| `get_win_probability` | Win probability chart data |
+| `get_schedule` | Season schedule by week |
+| `get_injuries` | Injury reports across all teams |
+| `get_transactions` | Recent transactions |
+| `get_futures` | Futures/odds markets |
+| `get_depth_chart` | Depth chart for a team |
+| `get_team_stats` | Team statistical profile |
+| `get_player_stats` | Player statistical profile |
 
-Returns `events[]` with game info, scores, status, and competitors.
-
-### get_standings
-Get NFL standings by conference and division.
-- `season` (int, optional): Season year
-
-Returns `groups[]` with AFC/NFC conferences, divisions, and team standings including W-L-T, PCT, PF, PA.
-
-### get_teams
-Get all 32 NFL teams. No parameters.
-
-Returns `teams[]` with id, name, abbreviation, logo, and location.
-
-### get_team_roster
-Get full roster for a team.
-- `team_id` (str, required): ESPN team ID (e.g., "12" for Broncos)
-
-Returns `athletes[]` with name, position, jersey number, height, weight, experience.
-
-### get_team_schedule
-Get schedule for a specific team.
-- `team_id` (str, required): ESPN team ID
-- `season` (int, optional): Season year
-
-Returns `events[]` with opponent, date, score (if played), and venue.
-
-### get_game_summary
-Get detailed box score and scoring plays.
-- `event_id` (str, required): ESPN event ID
-
-Returns `game_info`, `competitors`, `boxscore` (passing/rushing/receiving stats), `scoring_plays`, and `leaders`.
-
-### get_leaders
-Get NFL statistical leaders (passing, rushing, receiving).
-- `season` (int, optional): Season year
-
-Returns `categories[]` with leader rankings per stat category.
-
-### get_news
-Get NFL news articles.
-- `team_id` (str, optional): Filter by team
-
-Returns `articles[]` with headline, description, published date, and link.
-
-### get_play_by_play
-Get full play-by-play data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns `drives[]` with play-by-play detail including down, distance, yard line, play description, and scoring plays.
-
-### get_win_probability
-Get win probability chart data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns timestamped home/away win probability percentages throughout the game.
-
-### get_schedule
-Get NFL season schedule by week.
-- `season` (int, optional): Season year
-- `week` (int, optional): Week number (1-18 regular season, 19-23 postseason)
-
-Returns `events[]` for the specified week/season.
-
-### get_injuries
-Get current NFL injury reports across all teams. No parameters.
-
-Returns `teams[]` with per-team injury lists including player name, position, status (Out/Doubtful/Questionable/Day-To-Day), injury type, and detail.
-
-### get_transactions
-Get recent NFL transactions (trades, signings, waivers).
-- `limit` (int, optional): Max transactions to return. Defaults to 50.
-
-Returns `transactions[]` with date, team, and description.
-
-### get_futures
-Get NFL futures/odds markets (Super Bowl winner, MVP, etc.).
-- `limit` (int, optional): Max entries per market. Defaults to 25.
-- `season_year` (int, optional): Season year. Defaults to current.
-
-Returns `futures[]` with market name and entries (team/player name + odds value).
-
-### get_depth_chart
-Get depth chart for a specific team.
-- `team_id` (str, required): ESPN team ID
-
-Returns `charts[]` with offense/defense/special teams positions and player depth order.
-
-### get_team_stats
-Get full team statistical profile for a season.
-- `team_id` (str, required): ESPN team ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 1=preseason, 2=regular (default), 3=postseason.
-
-Returns `categories[]` (Passing, Rushing, Receiving, etc.) with detailed stats including value, rank, and per-game averages.
-
-### get_player_stats
-Get full player statistical profile for a season.
-- `player_id` (str, required): ESPN athlete ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 1=preseason, 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-## Team IDs (Common)
-
-| Team | ID | Team | ID |
-|------|-----|------|-----|
-| Cardinals | 22 | Rams | 14 |
-| Falcons | 1 | Ravens | 33 |
-| Bills | 2 | Bears | 3 |
-| Panthers | 29 | Bengals | 4 |
-| Cowboys | 6 | Browns | 5 |
-| Broncos | 7 | Lions | 8 |
-| Packers | 9 | Texans | 34 |
-| Colts | 11 | Jaguars | 30 |
-| Chiefs | 12 | Raiders | 13 |
-| Chargers | 24 | Dolphins | 15 |
-| Vikings | 16 | Patriots | 17 |
-| Saints | 18 | Giants | 19 |
-| Jets | 20 | Eagles | 21 |
-| Steelers | 23 | 49ers | 25 |
-| Seahawks | 26 | Buccaneers | 27 |
-| Titans | 10 | Commanders | 28 |
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-**User: "What are today's NFL scores?"**
-```bash
-sports-skills nfl get_scoreboard
-```
+Example 1: Today's scores
+User says: "What are today's NFL scores?"
+Actions:
+1. Call `get_scoreboard()`
+Result: All live and recent NFL games with scores and status
 
-**User: "Show me the AFC standings"**
-```bash
-sports-skills nfl get_standings --season=2025
-```
-Then filter results for AFC conference.
+Example 2: Conference standings
+User says: "Show me the AFC standings"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_standings(season=<derived_year>)`
+3. Filter results for AFC conference
+Result: AFC standings table with W-L-T, PCT, PF, PA per team
 
-**User: "Who's on the Chiefs roster?"**
-```bash
-sports-skills nfl get_team_roster --team_id=12
-```
+Example 3: Team roster
+User says: "Who's on the Chiefs roster?"
+Actions:
+1. Call `get_team_roster(team_id="12")`
+Result: Full Chiefs roster with name, position, jersey number, height, weight
 
-**User: "How did the Super Bowl go?"**
-1. Find the event_id from `get_scoreboard --week=23` (Super Bowl = week 23)
-2. Call `get_game_summary --event_id=<id>` for full box score
-Alternatively, use `get_schedule --week=23` to find the event.
+Example 4: Super Bowl box score
+User says: "How did the Super Bowl go?"
+Actions:
+1. Call `get_schedule(week=23)` to find the Super Bowl event_id
+2. Call `get_game_summary(event_id=<id>)` for full box score
+Result: Complete box score with passing/rushing/receiving stats and scoring plays
 
-**User: "Who's injured on the Chiefs?"**
-```bash
-sports-skills nfl get_injuries
-```
-Then filter results for Kansas City Chiefs (team_id=12).
+Example 5: Injury report
+User says: "Who's injured on the Chiefs?"
+Actions:
+1. Call `get_injuries()`
+2. Filter results for Kansas City Chiefs (team_id=12)
+Result: Chiefs injury list with player name, position, status, and injury type
 
-**User: "Show me the Chiefs depth chart"**
-```bash
-sports-skills nfl get_depth_chart --team_id=12
-```
-
-**User: "What are the Super Bowl odds?"**
-```bash
-sports-skills nfl get_futures --limit=10
-```
-
-**User: "Show me Patrick Mahomes' stats this season"**
-```bash
-sports-skills nfl get_player_stats --player_id=3139477
-```
+Example 6: Player statistics
+User says: "Show me Patrick Mahomes' stats this season"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_player_stats(player_id="3139477", season_year=<derived_year>)`
+Result: Season stats by category with value, rank, and per-game averages
 
 ## Commands that DO NOT exist — never call these
 
@@ -238,7 +137,7 @@ sports-skills nfl get_player_stats --player_id=3139477
 - ~~`get_box_score`~~ — does not exist. Use `get_game_summary` instead.
 - ~~`get_player_ratings`~~ — does not exist. Use `get_player_stats` instead.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
 ## Error Handling
 
@@ -249,8 +148,18 @@ When a command fails, **do not surface raw errors to the user**. Instead:
 
 ## Troubleshooting
 
-- **`sports-skills` command not found**: Run `pip install sports-skills`. If the package is not found on PyPI, install from GitHub: `pip install git+https://github.com/machina-sports/sports-skills.git`
-- **Team not found**: Use `get_teams` to list all teams and find the correct ID
-- **No data for future games**: ESPN only returns data for completed or in-progress games
-- **Week numbers**: Regular season is weeks 1-18. Postseason uses unified numbering: Wild Card=19, Divisional=20, Conference Championship=21, Pro Bowl=22, Super Bowl=23. The connector translates these to ESPN's internal `seasontype=3` automatically.
-- **Team schedule includes postseason**: `get_team_schedule` returns both regular-season and postseason games.
+Error: `sports-skills` command not found
+Cause: Package not installed
+Solution: Run `pip install sports-skills`. If not on PyPI, install from GitHub: `pip install git+https://github.com/machina-sports/sports-skills.git`
+
+Error: Team not found by ID
+Cause: Wrong or outdated ESPN team ID used
+Solution: Call `get_teams` to get the current list of all 32 NFL teams with their IDs
+
+Error: No data returned for a future game
+Cause: ESPN only returns data for completed or in-progress games
+Solution: Use `get_schedule` to see upcoming game details; `get_scoreboard` only covers active/recent games
+
+Error: Postseason week number returns no results
+Cause: Postseason uses unified week numbers (19-23) that differ from regular season
+Solution: Use week 19 for Wild Card, 20 for Divisional, 21 for Conference Championship, 23 for Super Bowl

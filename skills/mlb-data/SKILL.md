@@ -13,6 +13,8 @@ metadata:
 
 # MLB Data
 
+Before writing queries, consult `references/api-reference.md` for endpoints, ID conventions, and data shapes.
+
 ## Setup
 
 Before first use, check if the CLI is available:
@@ -36,177 +38,84 @@ sports-skills mlb get_standings --season=2025
 sports-skills mlb get_teams
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any data endpoint, verify:
+- Season year is derived from the system prompt's `currentDate` — never hardcoded.
+- If only a team name is provided, call `get_teams` to resolve the team ID before using team-specific commands.
+
 ## Choosing the Season
 
 Derive the active season from the system prompt's date — not just the calendar year.
 
 - **If the user specifies a season**, use it as-is.
 - **If the user says "current", "this season", or doesn't specify**: The MLB season runs late March/April through October. If the current month is January–March, the last completed season was the prior calendar year. From April onward, use the current calendar year.
-- **Example:** Current date is February 2026 → MLB is in offseason → use season `2025`.
-- **Example:** Current date is June 2026 → MLB season is active → use season `2026`.
-- **Never hardcode a season.** Always derive it from the system date.
 
 ## Commands
 
-### get_scoreboard
-Get live/recent MLB scores.
-- `date` (str, optional): Date in YYYY-MM-DD format. Defaults to today.
+| Command | Description |
+|---|---|
+| `get_scoreboard` | Live/recent MLB scores |
+| `get_standings` | Standings by league and division |
+| `get_teams` | All 30 MLB teams |
+| `get_team_roster` | Full roster for a team |
+| `get_team_schedule` | Schedule for a specific team |
+| `get_game_summary` | Detailed box score and scoring plays |
+| `get_leaders` | MLB statistical leaders |
+| `get_news` | MLB news articles |
+| `get_play_by_play` | Full play-by-play for a game |
+| `get_win_probability` | Win probability chart data |
+| `get_schedule` | Schedule for a specific date or season |
+| `get_injuries` | Injury reports across all teams |
+| `get_transactions` | Recent transactions |
+| `get_depth_chart` | Depth chart for a team |
+| `get_team_stats` | Team statistical profile |
+| `get_player_stats` | Player statistical profile |
 
-Returns `events[]` with game info, scores (by inning), status, and competitors.
-
-### get_standings
-Get MLB standings by league and division.
-- `season` (int, optional): Season year
-
-Returns `groups[]` with AL/NL leagues and East/Central/West division standings including W-L, PCT, GB, runs scored/allowed, run differential, and streak.
-
-### get_teams
-Get all 30 MLB teams. No parameters.
-
-Returns `teams[]` with id, name, abbreviation, logo, and location.
-
-### get_team_roster
-Get full roster for a team.
-- `team_id` (str, required): ESPN team ID (e.g., "10" for Yankees)
-
-Returns `athletes[]` with name, position, jersey number, height, weight, experience, bats/throws, and birthplace.
-
-### get_team_schedule
-Get schedule for a specific team.
-- `team_id` (str, required): ESPN team ID
-- `season` (int, optional): Season year
-
-Returns `events[]` with opponent, date, score (if played), and venue.
-
-### get_game_summary
-Get detailed box score and scoring plays.
-- `event_id` (str, required): ESPN event ID
-
-Returns `game_info`, `competitors`, `boxscore` (batting/pitching stats per player), `scoring_plays`, and `leaders`.
-
-### get_leaders
-Get MLB statistical leaders (batting avg, home runs, ERA, etc.).
-- `season` (int, optional): Season year
-
-Returns `categories[]` with leader rankings per stat category.
-
-### get_news
-Get MLB news articles.
-- `team_id` (str, optional): Filter by team
-
-Returns `articles[]` with headline, description, published date, and link.
-
-### get_play_by_play
-Get full play-by-play data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns play-by-play detail including inning, outs, batter, pitcher, play description, and scoring plays.
-
-### get_win_probability
-Get win probability chart data for a game.
-- `event_id` (str, required): ESPN event ID
-
-Returns timestamped home/away win probability percentages throughout the game.
-
-### get_schedule
-Get MLB schedule for a specific date or season.
-- `date` (str, optional): Date in YYYY-MM-DD format
-- `season` (int, optional): Season year (used only if no date provided)
-
-Returns `events[]` for the specified date.
-
-### get_injuries
-Get current MLB injury reports across all teams. No parameters.
-
-Returns `teams[]` with per-team injury lists including player name, position, status (10-Day IL/15-Day IL/60-Day IL/Day-To-Day), injury type, and detail.
-
-### get_transactions
-Get recent MLB transactions (trades, signings, DFA, IL moves).
-- `limit` (int, optional): Max transactions to return. Defaults to 50.
-
-Returns `transactions[]` with date, team, and description.
-
-### get_depth_chart
-Get depth chart for a specific team.
-- `team_id` (str, required): ESPN team ID
-
-Returns `charts[]` with positional depth (lineup, rotation, bullpen) and player depth order.
-
-### get_team_stats
-Get full team statistical profile for a season.
-- `team_id` (str, required): ESPN team ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 2=regular (default), 3=postseason.
-
-Returns `categories[]` (Batting, Pitching, Fielding) with detailed stats including value, rank, and per-game averages.
-
-### get_player_stats
-Get full player statistical profile for a season.
-- `player_id` (str, required): ESPN athlete ID
-- `season_year` (int, optional): Season year. Defaults to current.
-- `season_type` (int, optional): 2=regular (default), 3=postseason.
-
-Returns `categories[]` with detailed stats including value, rank, and per-game averages.
-
-## Team IDs (Common)
-
-| Team | ID | Team | ID |
-|------|-----|------|-----|
-| Arizona Diamondbacks | 29 | Milwaukee Brewers | 8 |
-| Atlanta Braves | 15 | Minnesota Twins | 9 |
-| Baltimore Orioles | 1 | New York Mets | 21 |
-| Boston Red Sox | 2 | New York Yankees | 10 |
-| Chicago Cubs | 16 | Oakland Athletics | 11 |
-| Chicago White Sox | 4 | Philadelphia Phillies | 22 |
-| Cincinnati Reds | 17 | Pittsburgh Pirates | 23 |
-| Cleveland Guardians | 5 | San Diego Padres | 25 |
-| Colorado Rockies | 27 | San Francisco Giants | 26 |
-| Detroit Tigers | 6 | Seattle Mariners | 12 |
-| Houston Astros | 18 | St. Louis Cardinals | 24 |
-| Kansas City Royals | 7 | Tampa Bay Rays | 30 |
-| Los Angeles Angels | 3 | Texas Rangers | 13 |
-| Los Angeles Dodgers | 19 | Toronto Blue Jays | 14 |
-| Miami Marlins | 28 | Washington Nationals | 20 |
-
-**Tip:** Use `get_teams` to get the full, accurate list of team IDs.
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-**User: "What are today's MLB scores?"**
-```bash
-sports-skills mlb get_scoreboard
-```
+Example 1: Today's scores
+User says: "What are today's MLB scores?"
+Actions:
+1. Call `get_scoreboard()`
+Result: All live and recent MLB games with scores by inning and status
 
-**User: "Show me the AL East standings"**
-```bash
-sports-skills mlb get_standings --season=2025
-```
-Then filter results for American League East.
+Example 2: Division standings
+User says: "Show me the AL East standings"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_standings(season=<derived_year>)`
+3. Filter results for American League East
+Result: AL East standings with W-L, PCT, GB, run differential
 
-**User: "Who's on the Yankees roster?"**
-```bash
-sports-skills mlb get_team_roster --team_id=10
-```
+Example 3: Team roster
+User says: "Who's on the Yankees roster?"
+Actions:
+1. Call `get_team_roster(team_id="10")`
+Result: Full Yankees roster with name, position, bats/throws, height, weight
 
-**User: "Show me the full box score for last night's Dodgers game"**
-1. Find the event_id from `get_scoreboard --date=YYYY-MM-DD`
-2. Call `get_game_summary --event_id=<id>` for full box score
+Example 4: Game box score
+User says: "Show me the full box score for last night's Dodgers game"
+Actions:
+1. Call `get_scoreboard(date="<yesterday>")` to find the event_id
+2. Call `get_game_summary(event_id=<id>)` for full box score
+Result: Complete box score with batting/pitching stats per player
 
-**User: "Who's on the IL for the Yankees?"**
-```bash
-sports-skills mlb get_injuries
-```
-Then filter results for New York Yankees (team_id=10).
+Example 5: Injury report
+User says: "Who's on the IL for the Yankees?"
+Actions:
+1. Call `get_injuries()`
+2. Filter results for New York Yankees (team_id=10)
+Result: Yankees IL list with player name, position, IL type, and injury detail
 
-**User: "Show me recent MLB trades"**
-```bash
-sports-skills mlb get_transactions --limit=20
-```
-
-**User: "Show me Shohei Ohtani's stats"**
-```bash
-sports-skills mlb get_player_stats --player_id=39832
-```
+Example 6: Player statistics
+User says: "Show me Shohei Ohtani's stats"
+Actions:
+1. Derive season year from `currentDate`
+2. Call `get_player_stats(player_id="39832", season_year=<derived_year>)`
+Result: Season stats by category (batting, pitching) with value, rank, and per-game averages
 
 ## Commands that DO NOT exist — never call these
 
@@ -215,7 +124,7 @@ sports-skills mlb get_player_stats --player_id=39832
 - ~~`get_box_score`~~ — does not exist. Use `get_game_summary` instead.
 - ~~`get_player_ratings`~~ — does not exist. Use `get_player_stats` instead.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
 ## Error Handling
 
@@ -226,7 +135,18 @@ When a command fails, **do not surface raw errors to the user**. Instead:
 
 ## Troubleshooting
 
-- **`sports-skills` command not found**: Run `pip install sports-skills`
-- **Team not found**: Use `get_teams` to list all teams and find the correct ID
-- **No data for future games**: ESPN only returns data for completed or in-progress games
-- **Offseason**: `get_scoreboard` returns 0 events — expected. Use `get_standings` or `get_news` instead.
+Error: `sports-skills` command not found
+Cause: Package not installed
+Solution: Run `pip install sports-skills`
+
+Error: Team not found by ID
+Cause: Wrong or outdated ESPN team ID used
+Solution: Call `get_teams` to get the current list of all 30 MLB teams with their IDs
+
+Error: No data returned for a future game
+Cause: ESPN only returns data for completed or in-progress games
+Solution: Use `get_schedule` to see upcoming game details; `get_scoreboard` only covers active/recent games
+
+Error: Offseason — scoreboard returns 0 events
+Cause: No games scheduled during the offseason (November–March)
+Solution: Use `get_standings` or `get_news` instead; MLB offseason transactions are available via `get_transactions`

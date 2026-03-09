@@ -13,32 +13,15 @@ metadata:
 
 # Polymarket — Sports Prediction Markets
 
-## CRITICAL: Always use the `sport` parameter
-
-For single-game markets, ALWAYS pass `sport='<code>'` to `search_markets` and `get_todays_events`.
-Without it, search returns only high-volume futures and misses individual game markets.
-
-```
-WRONG: search_markets(query="Leeds")           → 0 results
-WRONG: search_markets(query="Manchester City") → 0 results
-RIGHT: search_markets(sport='epl', query='Leeds') → returns all Leeds markets
-RIGHT: search_markets(sport='nba', query='Lakers') → returns all Lakers markets
-```
+Before writing queries, consult `references/api-reference.md` for sport codes, command parameters, and price format.
 
 ## Quick Start
 
 Prefer the CLI — it avoids Python import path issues:
 ```bash
-# Get today's NBA single-game markets
 sports-skills polymarket search_markets --sport=nba --sports_market_types=moneyline
-
-# Get today's EPL events with all market types
 sports-skills polymarket get_todays_events --sport=epl
-
-# Search for a specific team's markets
 sports-skills polymarket search_markets --sport=epl --query="Leeds" --sports_market_types=moneyline
-
-# List all available sport codes
 sports-skills polymarket get_sports_config
 ```
 
@@ -46,194 +29,139 @@ Python SDK (alternative):
 ```python
 from sports_skills import polymarket
 
-# Single-game markets for a sport
 polymarket.search_markets(sport='nba', sports_market_types='moneyline')
-
-# Today's events for a league
 polymarket.get_todays_events(sport='epl')
-
-# Search by team name within a league
 polymarket.search_markets(sport='epl', query='Leeds')
-
-# Available sport codes
 polymarket.get_sports_config()
+```
+
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any market endpoint, verify:
+- The `sport` parameter is always passed to `search_markets` and `get_todays_events` for single-game markets.
+- Prices are probabilities on a 0-1 scale (0.65 = 65%) — no conversion needed.
+- For price/orderbook endpoints, use `token_id` (CLOB), not `market_id` (Gamma). Call `get_market_details` first to get `clobTokenIds`.
+
+Without the `sport` parameter:
+```
+WRONG: search_markets(query="Leeds")           → 0 results
+RIGHT: search_markets(sport='epl', query='Leeds') → returns all Leeds markets
 ```
 
 ## Prerequisites
 
-**Core commands** (14 commands) work out of the box — no dependencies, no API keys.
+**Core commands** (no dependencies, no API keys):
+All read commands work out of the box.
 
-**Trading commands** require the `py_clob_client` package:
+**Trading commands** require `py_clob_client`:
 ```bash
 pip install sports-skills[polymarket]
 ```
-
-**Trading commands** additionally require a configured wallet:
-
+Additionally requires a configured wallet:
 ```bash
-# Option 1 — environment variable
 export POLYMARKET_PRIVATE_KEY=0x...
 ```
 
-```python
-# Option 2 — Python SDK (per-session)
-from sports_skills import polymarket
-polymarket.configure(private_key="0x...")
-```
-
-## Important Notes
-
-- **Prices are probabilities.** A price of 0.65 means 65% implied probability. No conversion needed.
-- **Use the `sport` parameter for single-game markets.** Without it, `search_markets` only finds high-volume futures. With `sport='nba'`, it finds today's NBA single-game moneylines, spreads, and props.
-- **`token_id` vs `market_id`:** Price and orderbook endpoints require the CLOB `token_id`, not the Gamma `market_id`. Always call `get_market_details` first to get `clobTokenIds`.
-- **`get_sports_config()`** returns 120+ sport codes (nba, epl, nfl, bun, fl1, ucl, mls, atp, wta, etc.).
-
-*For detailed reference data, see the files in the `references/` directory.*
-
 ## Workflows
 
-### Workflow: Find Single-Game Markets for a Sport
+### Find Single-Game Markets for a Sport
 1. `search_markets --sport=nba` (or epl, nfl, bun, etc.)
 2. Each market includes outcomes with prices (price = probability).
 3. For detailed prices, use `get_market_prices --token_id=<clob_token_id>`.
 
-### Workflow: Today's Events for a League
+### Today's Events for a League
 1. `get_todays_events --sport=epl` — returns events sorted by start date.
 2. Each event includes nested markets (moneyline, spreads, totals, props).
 3. Pick a market, get `clob_token_id` from outcomes, then `get_market_prices`.
 
-### Workflow: Team-Specific Search
-1. `search_markets --sport=epl --query="Leeds" --sports_market_types=moneyline`
-2. Returns only Leeds United moneyline markets.
-3. Works for any team/player name within a league.
-
-### Workflow: Live Odds Check
+### Live Odds Check
 1. `search_markets --sport=nba --query="Lakers" --sports_market_types=moneyline`
 2. `get_market_prices --token_id=<id>` for live CLOB prices.
 3. Present probabilities.
 
-### Workflow: Discover Available Sports
-1. `get_sports_config` — lists all sport codes and their series IDs.
-2. Use any code with `search_markets(sport=...)` or `get_todays_events(sport=...)`.
-
-### Workflow: Event Overview
-1. `get_sports_events --active=true`
-2. Pick event, then `get_event_details --event_id=<id>`.
-3. For each market, get prices.
-
-### Workflow: Price Trend Analysis
+### Price Trend Analysis
 1. Find market via `search_markets --sport=nba`.
 2. Get `clob_token_id` from the outcomes.
 3. `get_price_history --token_id=<id> --interval=1w`
 4. Present price movement.
 
-### Workflow: Trading (requires py_clob_client + wallet)
-1. `search_markets --sport=nba` — find markets
-2. Get `clob_token_id` from the outcomes
-3. `create_order --token_id=<id> --side=buy --price=0.55 --size=10`
-4. `get_orders` — verify order placed
-5. `cancel_order --order_id=<id>` — cancel if needed
+## Commands
 
-## Commands Reference
-
-### Core Commands (no dependencies needed)
-
-| Command | Required | Optional | Description |
-|---|---|---|---|
-| `get_sports_config` | | | **Available sport codes** (nba, epl, nfl, bun, fl1, etc.) |
-| `get_todays_events` | sport | limit | **Today's events for a league** — sorted by start date |
-| `search_markets` | | query, sport (required for single-game markets), sports_market_types, tag_id, limit | **Find markets** by sport, keyword, and type |
-| `get_sports_markets` | | limit, offset, sports_market_types, game_id, active, closed, order, ascending | Browse all sports markets |
-| `get_sports_events` | | limit, offset, active, closed, order, ascending, series_id | Browse sports events |
-| `get_series` | | limit, offset | List series (leagues) |
-| `get_market_details` | | market_id, slug | Single market details |
-| `get_event_details` | | event_id, slug | Single event details |
-| `get_market_prices` | | token_id, token_ids | Current CLOB prices |
-| `get_order_book` | token_id | | Full order book |
-| `get_sports_market_types` | | | Valid market types |
-| `get_price_history` | token_id | interval, fidelity | Historical prices |
-| `get_last_trade_price` | token_id | | Most recent trade |
-
-### Trading Commands (requires py_clob_client + wallet)
-
-| Command | Required | Optional | Description |
-|---|---|---|---|
-| `configure` | | private_key, signature_type | Configure wallet |
-| `create_order` | token_id, side, price, size | order_type | Place limit order |
-| `market_order` | token_id, side, amount | | Place market order |
-| `cancel_order` | order_id | | Cancel order |
-| `cancel_all_orders` | | | Cancel all orders |
-| `get_orders` | | market | Open orders |
-| `get_user_trades` | | | Your trades |
-
-## Sport Codes (common)
-
-Use these with `search_markets(sport=...)` and `get_todays_events(sport=...)`:
-
-| Code | League |
+| Command | Description |
 |---|---|
-| `nba` | NBA |
-| `nfl` | NFL |
-| `nhl` | NHL |
-| `mlb` | MLB |
-| `wnba` | WNBA |
-| `epl` | English Premier League |
-| `bun` | Bundesliga |
-| `lal` | La Liga |
-| `fl1` | Ligue 1 |
-| `sea` | Serie A |
-| `ucl` | Champions League |
-| `uel` | Europa League |
-| `mls` | MLS |
-| `atp` | ATP Tennis |
-| `wta` | WTA Tennis |
-| `cfb` | College Football |
-| `cbb` | College Basketball |
+| `get_sports_config` | Available sport codes |
+| `get_todays_events` | Today's events for a league |
+| `search_markets` | Find markets by sport, keyword, and type |
+| `get_sports_markets` | Browse all sports markets |
+| `get_sports_events` | Browse sports events |
+| `get_series` | List series (leagues) |
+| `get_market_details` | Single market details |
+| `get_event_details` | Single event details |
+| `get_market_prices` | Current CLOB prices |
+| `get_order_book` | Full order book |
+| `get_price_history` | Historical prices |
+| `get_last_trade_price` | Most recent trade |
 
-Run `get_sports_config()` for the full list of 120+ sport codes.
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-User: "Who's favored in tonight's NBA games?"
+Example 1: Tonight's NBA favorites
+User says: "Who's favored in tonight's NBA games?"
+Actions:
 1. Call `search_markets(sport='nba', sports_market_types='moneyline')`
-2. Present each matchup with implied probabilities (price = probability)
+Result: Each matchup with implied win probabilities (price = probability)
 
-User: "Show me Leeds vs Man City odds"
+Example 2: Team-specific odds
+User says: "Show me Leeds vs Man City odds"
+Actions:
 1. Call `search_markets(sport='epl', query='Leeds', sports_market_types='moneyline')`
-2. Present outcomes with prices
+Result: Leeds moneyline market with outcome prices
 
-User: "What EPL matches are on today?"
+Example 3: Today's EPL events
+User says: "What EPL matches are on today?"
+Actions:
 1. Call `get_todays_events(sport='epl')`
-2. Present events with their nested markets
+Result: Today's EPL events with nested markets (moneyline, spreads, totals, props)
 
-User: "Who will win the Premier League?"
-1. Call `search_markets(query='Premier League')` — this returns futures
+Example 4: League winner futures
+User says: "Who will win the Premier League?"
+Actions:
+1. Call `search_markets(query='Premier League')` — returns futures
 2. Sort results by Yes outcome price descending
+Result: Top contenders ranked by win probability
 
-User: "Show me Bundesliga odds for Dortmund vs Bayern"
+Example 5: Bundesliga odds
+User says: "Show me Bundesliga odds for Dortmund vs Bayern"
+Actions:
 1. Call `search_markets(sport='bun', query='Dortmund', sports_market_types='moneyline')`
-2. Present outcomes with prices
-
-User: "What sports markets are available?"
-1. Call `get_sports_config()` — lists all sport codes
-2. Present the available leagues
+Result: Dortmund/Bayern moneyline market with outcome prices
 
 ## Commands that DO NOT exist — never call these
 
 - ~~`cli_search_markets`~~ — does not exist. Use `search_markets` instead.
 - ~~`cli_sports_list`~~ — does not exist. Use `get_sports_config` instead.
-- ~~`cli_sports_teams`~~ — does not exist. Use `search_markets(sport=...)` instead.
 - ~~`get_market_odds`~~ / ~~`get_odds`~~ / ~~`get_current_odds`~~ — prices ARE probabilities. Use `get_market_prices(token_id=...)`.
 - ~~`get_implied_probability`~~ — the price IS the implied probability.
 - ~~`get_markets`~~ — use `get_sports_markets` (browse) or `search_markets` (search).
-- ~~`get_leaderboard`~~ / ~~`get_positions`~~ / ~~`get_holders`~~ / ~~`get_balance`~~ — not available.
-- ~~`get_team_schedule`~~ — this is a football-data command, not polymarket. Polymarket has `search_markets` and `get_todays_events`.
+- ~~`get_team_schedule`~~ — this is a football-data command, not polymarket.
 
-If a command is not in the Commands Reference table above, it does not exist. Do not guess or try commands not listed.
+If a command is not listed in `references/api-reference.md`, it does not exist.
 
-## Error Handling & Fallbacks
+## Troubleshooting
 
-- **If search returns 0 results**, make sure you're using the `sport` parameter. Without it, search only checks high-volume markets and may miss single-game events.
-- If `get_market_prices` fails, you likely used `market_id` instead of `token_id`. Always call `get_market_details` first to get CLOB `token_id`.
-- If prices seem stale, check `get_last_trade_price` for the most recent trade. Low-liquidity markets may have wide spreads.
-- **Never fabricate odds or probabilities.** If no market exists, state so.
+Error: `search_markets` returns 0 results
+Cause: The `sport` parameter is missing — without it, search only checks high-volume markets and misses single-game events
+Solution: Always pass `sport='<code>'` to `search_markets`. Check `references/api-reference.md` for valid sport codes
+
+Error: `get_market_prices` fails or returns wrong data
+Cause: `market_id` (Gamma) was used instead of `token_id` (CLOB)
+Solution: Call `get_market_details(market_id=<id>)` first to get the CLOB `clobTokenIds`, then use those with `get_market_prices`
+
+Error: Prices seem stale or unchanged
+Cause: Low-liquidity market — may have wide spreads and infrequent trades
+Solution: Check `get_last_trade_price(token_id=<id>)` for the most recent actual trade price
+
+Error: Trading commands fail
+Cause: `py_clob_client` is not installed or wallet is not configured
+Solution: Run `pip install sports-skills[polymarket]` and set `POLYMARKET_PRIVATE_KEY` environment variable

@@ -1,8 +1,7 @@
 ---
 name: markets
 description: |
-  Markets orchestration — connects ESPN live schedules with Kalshi & Polymarket prediction markets.
-  Unified dashboards, odds comparison, entity search, and bet evaluation across platforms.
+  Markets orchestration — connects ESPN live schedules with Kalshi and Polymarket prediction markets. Unified dashboards, odds comparison, entity search, and bet evaluation across platforms.
 
   Use when: user wants to see prediction market odds alongside ESPN game schedules, compare odds across platforms, search for a team/player on Kalshi or Polymarket, check for arbitrage between ESPN odds and prediction markets, or evaluate a specific game's market value.
   Don't use when: user wants raw prediction market data without ESPN context — use polymarket or kalshi directly. For pure odds math (conversion, de-vigging, Kelly) — use betting. For live scores without market data — use the sport-specific skill.
@@ -14,30 +13,17 @@ metadata:
 
 # Markets Orchestration
 
-Bridges ESPN live schedules (NBA, NFL, MLB, NHL, WNBA, CFB, CBB) with Kalshi and Polymarket prediction markets. Passes sport context to both platforms for accurate single-game market matching.
+Bridges ESPN live schedules (NBA, NFL, MLB, NHL, WNBA, CFB, CBB) with Kalshi and Polymarket prediction markets. Before writing queries, consult `references/api-reference.md` for supported sport codes, command parameters, and price normalization formats.
 
 ## Quick Start
 
 ```bash
-# Today's games with matching prediction markets
 sports-skills markets get_todays_markets --sport=nba
-
-# Search for a team across both exchanges
 sports-skills markets search_entity --query="Lakers" --sport=nba
-
-# Compare ESPN odds vs prediction market prices for a game
 sports-skills markets compare_odds --sport=nba --event_id=401234567
-
-# Sports-filtered market listing (no political/weather noise)
 sports-skills markets get_sport_markets --sport=nfl
-
-# Unified ESPN schedule
 sports-skills markets get_sport_schedule --sport=nba
-
-# Normalize a price from any source
 sports-skills markets normalize_price --price=0.65 --source=polymarket
-
-# Full evaluation: ESPN odds + market price → devig → edge → Kelly
 sports-skills markets evaluate_market --sport=nba --event_id=401234567
 ```
 
@@ -54,157 +40,102 @@ markets.normalize_price(price=0.65, source="polymarket")
 markets.evaluate_market(sport="nba", event_id="401234567")
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any orchestration command, verify:
+- A `sport` code is provided for sport-aware commands (`get_todays_markets`, `compare_odds`, `get_sport_markets`, `evaluate_market`).
+- Price sources are identified correctly before normalization: `espn` = American odds, `polymarket` = 0-1 probability, `kalshi` = 0-100 integer.
+
 ## Important Notes
 
-- **Sport context is passed through.** When you specify `--sport=nba`, the orchestrator maps it to the correct Polymarket sport code and Kalshi series ticker automatically.
-- **Both platforms use sport-aware search.** Polymarket uses its `/sports` config to resolve sport→series_id; Kalshi uses `KXNBA`, `KXNFL`, etc.
-- **Prices are normalized.** ESPN uses American odds, Polymarket uses 0-1 probability, Kalshi uses 0-100 integer. The orchestrator normalizes everything to implied probability for comparison.
-
-## Commands
-
-| Command | Required | Optional | Description |
-|---|---|---|---|
-| `get_todays_markets` | | sport, date | Fetch ESPN schedule → search both exchanges with sport context → unified dashboard |
-| `search_entity` | query | sport | Search Kalshi + Polymarket for a team/player/event name (passes sport to both platforms) |
-| `compare_odds` | sport, event_id | | ESPN odds + prediction market prices → normalized side-by-side + arb check |
-| `get_sport_markets` | sport | status, limit | Sport-filtered market listing on both platforms (uses sport code, not text query) |
-| `get_sport_schedule` | | sport, date | Unified ESPN schedule across one or all sports |
-| `normalize_price` | price, source | | Convert any source format to common {implied_prob, american, decimal} |
-| `evaluate_market` | sport, event_id | token_id, kalshi_ticker, outcome | ESPN odds + market price → devig → edge → Kelly |
-
-## Supported Sports
-
-### US Sports (with ESPN schedules)
-
-| Sport | Key | Kalshi Series | Polymarket Code |
-|---|---|---|---|
-| NFL | `nfl` | KXNFL | `nfl` |
-| NBA | `nba` | KXNBA | `nba` |
-| MLB | `mlb` | KXMLB | `mlb` |
-| NHL | `nhl` | KXNHL | `nhl` |
-| WNBA | `wnba` | KXWNBA | `wnba` |
-| College Football | `cfb` | KXCFB | `cfb` |
-| College Basketball | `cbb` | KXCBB | `cbb` |
-
-### Football (prediction markets only — no ESPN schedule)
-
-| League | Key | Kalshi Series | Polymarket Code |
-|---|---|---|---|
-| English Premier League | `epl` | KXEPLGAME | `epl` |
-| Champions League | `ucl` | KXUCL | `ucl` |
-| La Liga | `laliga` | KXLALIGA | `lal` |
-| Bundesliga | `bundesliga` | KXBUNDESLIGA | `bun` |
-| Serie A | `seriea` | KXSERIEA | `sea` |
-| Ligue 1 | `ligue1` | KXLIGUE1 | `fl1` |
-| MLS | `mls` | KXMLSGAME | `mls` |
+- **Sport context is passed through.** `--sport=nba` maps automatically to the correct Polymarket sport code and Kalshi series ticker.
+- **Both platforms use sport-aware search.** Polymarket uses `sport` → series_id; Kalshi uses `KXNBA`, `KXNFL`, etc.
+- **Prices are normalized.** Everything is converted to implied probability for comparison.
 
 ## Workflows
 
 ### Today's NBA Dashboard
 
-Show all NBA games today with matching prediction market odds.
-
 ```bash
 sports-skills markets get_todays_markets --sport=nba
 ```
-
-Returns each game with:
-- ESPN game info (teams, time, status)
-- ESPN DraftKings odds (American format)
-- Matching Kalshi markets (via `search_markets(sport='nba')`)
-- Matching Polymarket markets (via `search_markets(sport='nba')`)
+Returns each game with ESPN info, DraftKings odds, matching Kalshi markets, and matching Polymarket markets.
 
 ### Find Arb on a Specific Game
 
-1. Get the ESPN event ID from the schedule:
-   `sports-skills markets get_sport_schedule --sport=nba`
-2. Compare odds across all sources:
-   `sports-skills markets compare_odds --sport=nba --event_id=401234567`
-3. If arbitrage is detected, the response includes allocation percentages and guaranteed ROI.
-
-### Compare ESPN vs Polymarket
-
-1. `sports-skills markets compare_odds --sport=nba --event_id=401234567`
-2. Response includes ESPN odds normalized to probability + Polymarket prices side-by-side
-3. Arbitrage check runs automatically using `betting.find_arbitrage`
+1. Get the ESPN event ID: `get_sport_schedule --sport=nba`
+2. Compare odds: `compare_odds --sport=nba --event_id=<id>`
+3. If arbitrage detected, response includes allocation percentages and guaranteed ROI.
 
 ### Full Bet Evaluation
 
-1. `sports-skills markets evaluate_market --sport=nba --event_id=401234567`
-2. Fetches ESPN odds, searches for matching prediction market price
+1. `evaluate_market --sport=nba --event_id=<id>`
+2. Fetches ESPN odds and matching prediction market price
 3. Pipes through `betting.evaluate_bet`: devig → edge → Kelly
-4. Returns fair probability, edge percentage, EV, Kelly fraction, and recommendation
-
-### Search for a Team
-
-Find all prediction markets related to a team:
-
-```bash
-sports-skills markets search_entity --query="Chiefs" --sport=nfl
-```
-
-Returns Kalshi events (via `search_markets(sport='nfl', query='Chiefs')`) and Polymarket markets (via `search_markets(sport='nfl', query='Chiefs')`).
-
-## Price Normalization
-
-Different sources use different formats:
-
-| Source | Format | Example | Meaning |
-|---|---|---|---|
-| ESPN | American odds | `-150` | Favorite, implied 60% |
-| Polymarket | Probability (0-1) | `0.65` | 65% implied probability |
-| Kalshi | Integer (0-100) | `65` | 65% implied probability |
-
-`normalize_price` converts any format to a common structure:
-```json
-{
-  "implied_probability": 0.65,
-  "american": -185.7,
-  "decimal": 1.5385,
-  "source": "polymarket"
-}
-```
+4. Returns fair probability, edge, EV, Kelly fraction, and recommendation
 
 ## Examples
 
-User: "What NBA games are on today and what are the prediction market odds?"
-→ `markets.get_todays_markets(sport="nba")`
+Example 1: Today's games with prediction market odds
+User says: "What NBA games are on today and what are the prediction market odds?"
+Actions:
+1. Call `get_todays_markets(sport="nba")`
+Result: Unified dashboard with each game's ESPN info and Kalshi/Polymarket prices
 
-User: "Find me Lakers markets on Kalshi and Polymarket"
-→ `markets.search_entity(query="Lakers", sport="nba")`
+Example 2: Cross-platform team search
+User says: "Find me Lakers markets on Kalshi and Polymarket"
+Actions:
+1. Call `search_entity(query="Lakers", sport="nba")`
+Result: All Lakers markets across both exchanges with prices and volume
 
-User: "Compare the odds for this Celtics game across ESPN and Polymarket"
-→ `markets.compare_odds(sport="nba", event_id="<id>")`
+Example 3: Odds comparison for a specific game
+User says: "Compare the odds for this Celtics game across ESPN and Polymarket"
+Actions:
+1. Get event_id from `get_sport_schedule(sport="nba")`
+2. Call `compare_odds(sport="nba", event_id="<id>")`
+Result: Normalized side-by-side comparison with automatic arbitrage check
 
-User: "Is there edge on the Chiefs game?"
-→ `markets.evaluate_market(sport="nfl", event_id="<id>")`
+Example 4: Full market evaluation
+User says: "Is there edge on the Chiefs game?"
+Actions:
+1. Get event_id from `get_sport_schedule(sport="nfl")`
+2. Call `evaluate_market(sport="nfl", event_id="<id>")`
+Result: Fair probability, edge percentage, EV, Kelly fraction, and bet recommendation
 
-User: "Show me all NFL prediction markets"
-→ `markets.get_sport_markets(sport="nfl")`
+Example 5: Browse all markets for a sport
+User says: "Show me all NFL prediction markets"
+Actions:
+1. Call `get_sport_markets(sport="nfl")`
+Result: All open NFL markets across Kalshi and Polymarket
 
-User: "Convert a Polymarket price of 65 cents to American odds"
-→ `markets.normalize_price(price=0.65, source="polymarket")`
+Example 6: Price conversion
+User says: "Convert a Polymarket price of 65 cents to American odds"
+Actions:
+1. Call `normalize_price(price=0.65, source="polymarket")`
+Result: Common structure with implied probability (0.65), American odds (-185.7), and decimal (1.54)
 
 ## Commands that DO NOT exist — never call these
 
-- ~~`get_odds`~~ — does not exist. Use `compare_odds` to see odds across sources, or use the polymarket/kalshi skill directly.
-- ~~`search_markets`~~ — does not exist on the markets module. Use `search_entity` instead. For raw market search, use the polymarket or kalshi skill directly.
+- ~~`get_odds`~~ — does not exist. Use `compare_odds` to see odds across sources.
+- ~~`search_markets`~~ — does not exist on the markets module. Use `search_entity` instead.
 - ~~`get_schedule`~~ — does not exist. Use `get_sport_schedule` instead.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in `references/api-reference.md`, it does not exist.
 
-## Partial Results
+## Troubleshooting
 
-If one source is unavailable (e.g., Kalshi is down), the module returns what it has with warnings:
+Error: No markets returned for a sport
+Cause: Sport code may be missing or incorrect
+Solution: Check `references/api-reference.md` for valid sport codes. Use the exact code (e.g., `nba`, `epl`, `laliga`)
 
-```json
-{
-  "status": true,
-  "data": {
-    "games": [...],
-    "warnings": ["Kalshi search failed: connection timeout"]
-  }
-}
-```
+Error: `compare_odds` returns no data for an event
+Cause: The event_id is incorrect or the game has not been indexed yet
+Solution: Call `get_sport_schedule(sport=...)` to retrieve the correct event_id first
 
-This ensures you always get usable data even when a source is temporarily unavailable.
+Error: One source shows warnings in the response
+Cause: Kalshi or Polymarket is temporarily unavailable
+Solution: The module returns partial results — use what is available. Retry the unavailable source separately using the kalshi or polymarket skill directly
+
+Error: `normalize_price` returns unexpected American odds value
+Cause: Wrong `source` parameter — Kalshi uses 0-100 integers, Polymarket uses 0-1 decimals
+Solution: Verify the source. Kalshi price of 65 requires `source="kalshi"`, Polymarket price of 0.65 requires `source="polymarket"`

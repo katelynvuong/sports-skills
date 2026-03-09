@@ -13,6 +13,8 @@ metadata:
 
 # Tennis Data (ATP + WTA)
 
+Before writing queries, consult `references/api-reference.md` for endpoints, ID conventions, and data shapes.
+
 ## Quick Start
 
 Prefer the CLI — it avoids Python import path issues:
@@ -22,14 +24,11 @@ sports-skills tennis get_rankings --tour=wta
 sports-skills tennis get_calendar --tour=atp --year=2026
 ```
 
-## Important: Tennis is Not a Team Sport
+## CRITICAL: Before Any Query
 
-Tennis data is fundamentally different from team sports (NFL, NBA, etc.):
-- **Tournaments, not games**: Events are multi-day tournaments containing many matches.
-- **Individual athletes**: Competitors are individual players (singles) or pairs (doubles), not teams.
-- **Set-based scoring**: Scores are per-set game counts (e.g., 6-4, 7-5), not quarters.
-- **Rankings, not standings**: Players have ATP/WTA ranking points, not team records.
-- **No rosters or team schedules**: Tennis has no team-level commands.
+CRITICAL: Before calling any data endpoint, verify:
+- The `tour` parameter is specified (`atp` or `wta`) — there is no default.
+- Year is derived from the system prompt's `currentDate` — never hardcoded.
 
 ## The `tour` Parameter
 
@@ -37,41 +36,55 @@ Most commands require `--tour=atp` or `--tour=wta`:
 - **ATP**: Men's professional tennis tour
 - **WTA**: Women's professional tennis tour
 
-If the user doesn't specify, default to `atp` for men's tennis or `wta` for women's tennis. If the user just says "tennis" without specifying, ask which tour or show both by calling the command twice.
+If the user doesn't specify, ask which tour or show both by calling the command twice.
 
-Before complex fetches, run the parameter validator: `bash scripts/validate_params.sh [args]`
+## Commands
 
-*For detailed reference data, see the files in the `references/` directory.*
+| Command | Description |
+|---|---|
+| `get_scoreboard` | Live/recent tournament scores for a tour |
+| `get_rankings` | ATP or WTA player rankings |
+| `get_calendar` | Full season tournament calendar |
+| `get_player_info` | Individual tennis player profile |
+
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Workflows
 
-### Workflow: Live Tournament Check
+### Live Tournament Check
 1. `get_scoreboard --tour=<atp|wta>`
 2. Present current matches by round.
 3. For player info, use `get_player_info --player_id=<id>`.
 
-### Workflow: Rankings Lookup
+### Rankings Lookup
 1. `get_rankings --tour=<atp|wta> --limit=20`
 2. Present rankings with points and trend.
 
-### Workflow: Season Calendar
+### Season Calendar
 1. `get_calendar --tour=<atp|wta> --year=<year>`
 2. Filter for specific tournament.
-3. `get_news --tour=<tour>` for latest coverage.
 
 ## Examples
 
-User: "What ATP matches are happening right now?"
+Example 1: Live matches
+User says: "What ATP matches are happening right now?"
+Actions:
 1. Call `get_scoreboard(tour="atp")`
-2. Present current tournaments and matches by round
+Result: Current tournament matches organized by round with scores and status
 
-User: "Show me the WTA rankings"
+Example 2: Women's rankings
+User says: "Show me the WTA rankings"
+Actions:
 1. Call `get_rankings(tour="wta", limit=20)`
-2. Present rankings with rank, name, points, and trend
+Result: Top 20 WTA players with rank, name, points, and trend
 
-User: "When is the French Open this year?"
-1. Call `get_calendar(tour="atp", year=2026)`
-2. Search results for "Roland Garros" (the French Open's official name)
+Example 3: Upcoming Grand Slam date
+User says: "When is the French Open this year?"
+Actions:
+1. Derive year from `currentDate`
+2. Call `get_calendar(tour="atp", year=<derived_year>)`
+3. Search results for "Roland Garros" (the French Open's official name)
+Result: French Open dates, location (Paris), and surface (clay)
 
 ## Commands that DO NOT exist — never call these
 
@@ -80,11 +93,22 @@ User: "When is the French Open this year?"
 - ~~`get_head_to_head`~~ — does not exist. Head-to-head records are not available via this API.
 - ~~`get_standings`~~ — does not exist. Tennis uses `get_rankings`, not standings.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
-## Error Handling & Fallbacks
+## Troubleshooting
 
-- If `get_scoreboard` returns no matches, tournaments run specific weeks. Use `get_calendar` to find when events are scheduled.
-- If rankings are empty, rankings update weekly on Mondays. The command auto-retries previous weeks.
-- If player profile fails, use `get_rankings` to verify the player_id.
-- **Never fabricate match scores or rankings.** If data is unavailable, state so.
+Error: `get_scoreboard` returns no matches
+Cause: Tennis tournaments run specific weeks; no tournament may be scheduled this week
+Solution: Call `get_calendar(tour=...)` to find when the next event is scheduled
+
+Error: Rankings are empty
+Cause: Rankings update weekly on Mondays; there may be a brief update window
+Solution: The command auto-retries previous weeks. If still empty, retry in a few minutes
+
+Error: Player profile fails
+Cause: Player ID is incorrect
+Solution: Use `get_rankings` to find player IDs from the current rankings list, or verify via ESPN tennis URLs
+
+Error: Scores seem delayed or don't update live
+Cause: Scores update after each set/match is completed, not point-by-point
+Solution: This is expected behavior. Refresh `get_scoreboard` periodically for updated set scores

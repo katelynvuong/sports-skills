@@ -13,6 +13,8 @@ metadata:
 
 # Golf Data (PGA / LPGA / DP World Tour)
 
+Before writing queries, consult `references/api-reference.md` for endpoints, player IDs, and score formats.
+
 ## Setup
 
 Before first use, check if the CLI is available:
@@ -36,15 +38,19 @@ sports-skills golf get_schedule --tour=pga --year=2026
 sports-skills golf get_news --tour=pga
 ```
 
+## CRITICAL: Before Any Query
+
+CRITICAL: Before calling any data endpoint, verify:
+- The `tour` parameter is specified (`pga`, `lpga`, or `eur`) — there is no default tour.
+- Player IDs are obtained from `get_leaderboard` results or ESPN golf URLs — never guessed.
+
 ## Important: Golf is Not a Team Sport
 
-Golf data is fundamentally different from team sports (NFL, NBA, etc.):
 - **Tournaments, not games**: Each event is a multi-day tournament (typically 4 rounds, Thu–Sun).
 - **Individual athletes**: The leaderboard has 72–147 individual golfers, not 2 teams.
 - **Score relative to par**: Scores are strings like "-17", "E" (even), "+2" — not point totals.
-- **Round-by-round scoring**: Each golfer has 4 round scores (stroke count and score-to-par).
-- **One event per week**: Unlike team sports with multiple games per day, golf has one tournament per week per tour.
-- **No standings/rankings endpoint**: FedEx Cup standings are not available via this API.
+- **One event per week**: Unlike team sports, golf has one tournament per week per tour.
+- **No standings endpoint**: FedEx Cup standings are not available via this API.
 
 ## The `tour` Parameter
 
@@ -57,154 +63,65 @@ If the user doesn't specify, default to `pga`. If they say "women's golf" or "LP
 
 ## Commands
 
-### get_leaderboard
-Get the current tournament leaderboard with all golfer scores.
-- `tour` (str, required): "pga", "lpga", or "eur"
+| Command | Description |
+|---|---|
+| `get_leaderboard` | Current tournament leaderboard with all golfer scores |
+| `get_schedule` | Full season tournament schedule |
+| `get_player_info` | Individual golfer profile |
+| `get_player_overview` | Detailed overview with season stats, rankings, recent results |
+| `get_scorecard` | Hole-by-hole scorecard for a golfer |
+| `get_news` | Golf news articles |
 
-Returns the current/most recent tournament with:
-- Tournament name, venue, status, current round
-- `leaderboard[]` sorted by position with golfer name, country, total score, and round-by-round scores
-- `field_size` — total number of golfers in the field
-
-The leaderboard is sorted by position (1 = leader). Each golfer has:
-- `position`: Leaderboard rank
-- `name`: Golfer name
-- `country`: Nationality
-- `score`: Total score relative to par (e.g., "-17", "E", "+2")
-- `rounds[]`: Array of round scores with stroke count and score-to-par
-
-### get_schedule
-Get full season tournament schedule.
-- `tour` (str, required): "pga", "lpga", or "eur"
-- `year` (int, optional): Season year. Defaults to current.
-
-Returns `tournaments[]` with tournament name, ID, start/end dates. Useful for answering "when is the Masters?" or "what tournaments are coming up?"
-
-### get_player_info
-Get individual golfer profile.
-- `player_id` (str, required): ESPN athlete ID
-- `tour` (str, optional): "pga", "lpga", or "eur". Defaults to "pga".
-
-Returns golfer details: name, age, nationality, birthplace, height/weight, turned pro year, college, headshot URL, and ESPN profile link.
-
-**Finding player IDs:** Player IDs appear in leaderboard results (`id` field on each golfer). You can also find them in ESPN golf URLs (e.g., espn.com/golf/player/_/id/9478/scottie-scheffler → ID is 9478).
-
-**Note:** Player profiles work for PGA Tour and DP World Tour golfers. LPGA player profiles are not available through ESPN's API — the command will automatically try PGA and EUR tours as fallback.
-
-### get_player_overview
-Get detailed golfer overview with season stats, rankings, and recent results.
-- `player_id` (str, required): ESPN athlete ID
-- `tour` (str, optional): "pga", "lpga", or "eur". Defaults to "pga".
-
-Returns season statistics (scoring average, earnings, wins, top-10s), world/tour rankings, and recent tournament results.
-
-### get_scorecard
-Get hole-by-hole scorecard for a golfer in the current/most recent tournament.
-- `tour` (str, required): "pga", "lpga", or "eur"
-- `player_id` (str, required): ESPN athlete ID
-
-Returns `rounds[]` with hole-by-hole scores (strokes, score relative to par) for each completed round.
-
-### get_news
-Get golf news articles.
-- `tour` (str, required): "pga", "lpga", or "eur"
-
-Returns `articles[]` with headline, description, published date, and link.
-
-## Common Player IDs
-
-| Player | ID | Player | ID |
-|--------|-----|--------|-----|
-| Scottie Scheffler | 9478 | Nelly Korda | 9012 |
-| Rory McIlroy | 3470 | Jin Young Ko | 9758 |
-| Jon Rahm | 9780 | Lydia Ko | 7956 |
-| Collin Morikawa | 10592 | Lilia Vu | 9401 |
-| Xander Schauffele | 10404 | Nasa Hataoka | 10484 |
-| Viktor Hovland | 10503 | Atthaya Thitikul | 10982 |
-| Hideki Matsuyama | 5765 | Celine Boutier | 9133 |
-| Ludvig Aberg | 4686088 | Lexi Thompson | 6843 |
-
-**Tip:** Use `get_leaderboard` to find current player IDs from the active tournament.
-
-## Reading Leaderboard Scores
-
-Golf scores are relative to par. Example response:
-```json
-{
-  "leaderboard": [
-    {"position": 1, "name": "Scottie Scheffler", "country": "United States", "score": "-17",
-     "rounds": [
-       {"round": 1, "strokes": 63, "score": "-8"},
-       {"round": 2, "strokes": 68, "score": "-3"},
-       {"round": 3, "strokes": 67, "score": "-4"},
-       {"round": 4, "strokes": 70, "score": "-1"}
-     ]},
-    {"position": 2, "name": "Rory McIlroy", "country": "Northern Ireland", "score": "-15", ...}
-  ]
-}
-```
-- **Negative score** = under par (good). "-17" means 17 strokes under par.
-- **"E"** = even par.
-- **Positive score** = over par. "+2" means 2 strokes over par.
-- **Strokes** = actual stroke count for that round (par 72 course → 63 strokes = -9).
-
-## Major Championships
-
-| Tournament | Months | Course(s) |
-|-----------|--------|-----------|
-| The Masters | April | Augusta National |
-| PGA Championship | May | Varies |
-| U.S. Open | June | Varies |
-| The Open Championship | July | Links courses (UK) |
-
-Use `get_schedule` and search for these tournament names to find dates and event IDs.
+See `references/api-reference.md` for full parameter lists and return shapes.
 
 ## Examples
 
-**User: "What's the PGA leaderboard right now?"**
-```bash
-sports-skills golf get_leaderboard --tour=pga
-```
+Example 1: Current leaderboard
+User says: "What's the PGA leaderboard right now?"
+Actions:
+1. Call `get_leaderboard(tour="pga")`
+Result: Current tournament leaderboard sorted by position with each golfer's score and round-by-round breakdown
 
-**User: "Show me the LPGA schedule for 2026"**
-```bash
-sports-skills golf get_schedule --tour=lpga --year=2026
-```
+Example 2: Season schedule
+User says: "Show me the LPGA schedule for 2026"
+Actions:
+1. Call `get_schedule(tour="lpga", year=2026)`
+Result: Full LPGA tournament calendar with names, dates, and venues
 
-**User: "Tell me about Scottie Scheffler"**
-```bash
-sports-skills golf get_player_info --player_id=9478
-```
+Example 3: Golfer profile
+User says: "Tell me about Scottie Scheffler"
+Actions:
+1. Call `get_player_info(player_id="9478", tour="pga")`
+Result: Scheffler's profile with age, nationality, height/weight, turned pro year
 
-**User: "When is the Masters this year?"**
-```bash
-sports-skills golf get_schedule --tour=pga --year=2026
-```
-Then search the results for "Masters Tournament".
+Example 4: Upcoming major
+User says: "When is the Masters this year?"
+Actions:
+1. Derive year from `currentDate`
+2. Call `get_schedule(tour="pga", year=<derived_year>)`
+3. Search results for "Masters Tournament"
+Result: Masters date, course (Augusta National), and tournament ID
 
-**User: "Show me Scottie Scheffler's scorecard"**
-```bash
-sports-skills golf get_scorecard --tour=pga --player_id=9478
-```
+Example 5: Player scorecard
+User says: "Show me Scottie Scheffler's scorecard"
+Actions:
+1. Call `get_scorecard(tour="pga", player_id="9478")`
+Result: Hole-by-hole scores for each completed round with strokes and score-to-par
 
-**User: "How has Rory McIlroy been playing this season?"**
-```bash
-sports-skills golf get_player_overview --player_id=3470
-```
-
-**User: "Latest golf news"**
-```bash
-sports-skills golf get_news --tour=pga
-```
+Example 6: Player season form
+User says: "How has Rory McIlroy been playing this season?"
+Actions:
+1. Call `get_player_overview(player_id="3470", tour="pga")`
+Result: Season stats (scoring average, earnings, wins, top-10s), world ranking, and recent results
 
 ## Commands that DO NOT exist — never call these
 
 - ~~`get_tournament_results`~~ — does not exist. Use `get_leaderboard` for current/recent tournament scores.
-- ~~`get_rankings`~~ — does not exist. FedEx Cup/world rankings are not available via this API. Use `get_leaderboard` for tournament standings or `get_player_overview` for individual rankings.
+- ~~`get_rankings`~~ — does not exist. FedEx Cup/world rankings are not available via this API. Use `get_player_overview` for individual rankings.
 - ~~`get_odds`~~ / ~~`get_betting_odds`~~ — not available. For prediction market odds, use the polymarket or kalshi skill.
 - ~~`search_player`~~ — does not exist. Use `get_leaderboard` to find player IDs from the current field.
 
-If a command is not listed in the Commands section above, it does not exist.
+If a command is not listed in the Commands table above, it does not exist.
 
 ## Error Handling
 
@@ -215,7 +132,18 @@ When a command fails, **do not surface raw errors to the user**. Instead:
 
 ## Troubleshooting
 
-- **`sports-skills` command not found**: Run `pip install sports-skills`
-- **No active tournament**: Golf tournaments run Thursday–Sunday. Between events, `get_leaderboard` may show no active tournament. Use `get_schedule` to see upcoming events.
-- **Limited round data**: Before a tournament starts, round scores will be empty. During the tournament, only completed rounds have scores.
-- **Player not found**: Use `get_leaderboard` to find player IDs from the current field, or look up ESPN golf URLs.
+Error: `sports-skills` command not found
+Cause: Package not installed
+Solution: Run `pip install sports-skills`
+
+Error: No active tournament on leaderboard
+Cause: Golf tournaments run Thursday–Sunday; between events the leaderboard may show no active tournament
+Solution: Call `get_schedule(tour="pga")` to find the next upcoming event
+
+Error: Limited round data — scores are empty
+Cause: Before a tournament starts, round scores will be empty. During the tournament, only completed rounds have scores.
+Solution: Check `get_leaderboard` for tournament status and current round; wait for rounds to complete
+
+Error: Player not found by ID
+Cause: Player ID is incorrect or the player is not in the current tournament field
+Solution: Get player IDs from `get_leaderboard` results, or look up ESPN golf URLs (`espn.com/golf/player/_/id/<id>/player-name`)
