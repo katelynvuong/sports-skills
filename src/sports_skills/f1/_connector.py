@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import fastf1
 import pandas as pd
+
+_CURRENT_YEAR = datetime.now().year
 
 fastf1.set_log_level("WARNING")
 
@@ -387,7 +391,7 @@ def get_pit_stops(request_data):
     """Get pit stop durations (PitIn → PitOut) for a race or full season."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
         event = params.get("event")
         driver = params.get("driver")
 
@@ -489,7 +493,7 @@ def get_speed_data(request_data):
     """Get speed trap and intermediate speed data for a race or full season."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
         event = params.get("event")
         driver = params.get("driver")
 
@@ -581,7 +585,7 @@ def get_championship_standings(request_data):
     """Get driver and constructor championship standings by aggregating all race results."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
 
         race_names = _get_completed_races(year)
 
@@ -677,7 +681,7 @@ def get_season_stats(request_data):
     """Get aggregated season stats: fastest laps, top speeds, points, wins per driver/team."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
 
         race_names = _get_completed_races(year)
 
@@ -835,7 +839,7 @@ def get_team_comparison(request_data):
     """Compare two teams head-to-head: qualifying, race pace, sectors, points."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
         team1 = params.get("team1", "")
         team2 = params.get("team2", "")
         event = params.get("event")
@@ -1054,7 +1058,7 @@ def get_driver_comparison(request_data):
     """Compare any two drivers head-to-head: qualifying H2H, race H2H, pace delta."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
         driver1 = params.get("driver1", "")
         driver2 = params.get("driver2", "")
         event = params.get("event")
@@ -1296,7 +1300,7 @@ def get_tire_analysis(request_data):
     """Tire strategy and degradation analysis: compound usage, stint lengths, deg rates."""
     try:
         params = request_data.get("params", {})
-        year = int(params.get("year", 2025))
+        year = int(params.get("year", _CURRENT_YEAR))
         event = params.get("event")
         driver = params.get("driver")
 
