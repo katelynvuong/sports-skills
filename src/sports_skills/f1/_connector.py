@@ -377,13 +377,18 @@ def _get_completed_races(year):
     """Get list of completed race event names for a season."""
     schedule = fastf1.get_event_schedule(year)
     races = schedule[schedule["EventFormat"] != "testing"]
+    today = pd.Timestamp.now().normalize()
+    races = races[races["EventDate"] < today]
     return races["EventName"].tolist()
 
 
-def _load_session_cached(year, event):
+def _load_session_cached(year, event, *, results_only=False):
     """Load a race session. FastF1 handles its own caching."""
     session = fastf1.get_session(year, event, "R")
-    session.load()
+    if results_only:
+        session.load(laps=False, telemetry=False, weather=False, messages=False)
+    else:
+        session.load()
     return session
 
 
@@ -595,7 +600,7 @@ def get_championship_standings(request_data):
 
         for race_name in race_names:
             try:
-                session = _load_session_cached(year, race_name)
+                session = _load_session_cached(year, race_name, results_only=True)
                 results = session.results
 
                 for _, row in results.iterrows():
