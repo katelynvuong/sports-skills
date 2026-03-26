@@ -69,6 +69,7 @@ Each skill is a SKILL.md file that any compatible AI agent can load and use imme
 | `cbb-data` | College Basketball (CBB) | 9 | ESPN |
 | `golf-data` | Golf (PGA/LPGA/DP World) | 4 | ESPN |
 | `volleyball-data` | Volleyball (Dutch) | 10 | Nevobo |
+| `xctf-data` | NCAA Cross Country & Track | 2 | TFRRS |
 | `fastf1` | Formula 1 | 6 | FastF1 (free library) |
 | `sports-news` | Multi-sport | 2 | Any RSS feed, Google News |
 | `metadata` | Multi-sport | 5 | TheSportsDB (free API) |
@@ -166,6 +167,7 @@ Pick the sports you need. Each skill installs independently.
 | `cbb-data` | College Basketball | `npx skills add machina-sports/sports-skills@cbb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/cbb-data) |
 | `golf-data` | Golf (PGA/LPGA/DP World) | `npx skills add machina-sports/sports-skills@golf-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/golf-data) |
 | `volleyball-data` | Volleyball (Dutch) | `npx skills add machina-sports/sports-skills@volleyball-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/volleyball-data) |
+| `xctf-data` | NCAA XC & Track & Field | `npx skills add machina-sports/sports-skills@xctf-data` | — |
 | `fastf1` | Formula 1 | `npx skills add machina-sports/sports-skills@fastf1` | [skills.sh](https://skills.sh/machina-sports/sports-skills/fastf1) |
 | `sports-news` | Multi-sport News | `npx skills add machina-sports/sports-skills@sports-news` | [skills.sh](https://skills.sh/machina-sports/sports-skills/sports-news) |
 
@@ -359,6 +361,15 @@ Dutch volleyball data via the Nevobo (Nederlandse Volleybalbond) open API. Cover
 | `get_tournaments` | Tournament calendar |
 | `get_news` | Federation news |
 
+### xctf-data
+
+NCAA cross country and track & field athlete data via [TFRRS](https://www.tfrrs.org) (Track & Field Results Reporting System). Athlete profiles, personal records, and full results history. No API keys required.
+
+| Command | Description |
+|---------|-------------|
+| `search_athlete` | Search current team roster by name; returns slugs needed for `get_athlete_profile` |
+| `get_athlete_profile` | Athlete PRs, eligibility, school, and full meet results history |
+
 ### fastf1
 
 Formula 1 data via the [FastF1](https://github.com/theOehrly/Fast-F1) open-source library.
@@ -438,6 +449,7 @@ sports-skills.sh
 │   ├── cbb-data/SKILL.md             # College basketball scores, rankings
 │   ├── golf-data/SKILL.md            # Golf leaderboards, schedules, profiles
 │   ├── volleyball-data/SKILL.md      # Dutch volleyball standings, results, clubs
+│   ├── xctf-data/SKILL.md            # NCAA XC/TF athlete profiles, PRs, results (TFRRS)
 │   ├── fastf1/SKILL.md               # F1 sessions, laps, results
 │   ├── kalshi/SKILL.md               # Prediction markets (CFTC)
 │   ├── polymarket/SKILL.md           # Prediction markets (crypto)
