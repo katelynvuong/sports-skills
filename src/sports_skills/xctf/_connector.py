@@ -11,7 +11,6 @@ from __future__ import annotations
 import re
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 
 _BASE = "https://www.tfrrs.org"
@@ -237,47 +236,6 @@ def _parse_athlete_profile(html: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-_DDG_LITE = "https://lite.duckduckgo.com/lite/"
-
-
-def _search_duckduckgo_lite(name: str, school: str = "") -> list[dict]:
-    """Search DuckDuckGo Lite for TFRRS athlete profile URLs.
-
-    Returns a deduplicated list of dicts with athlete_id, school, name slugs.
-    sport is None because it cannot be determined from search results alone.
-    """
-    query = f"site:tfrrs.org/athletes {name}"
-    if school:
-        query += f" {school}"
-
-    url = f"{_DDG_LITE}?q={urllib.parse.quote(query)}"
-    result = _fetch(url)
-    if isinstance(result, dict):
-        return []  # fetch error — graceful fallback
-
-    raw = re.findall(
-        r"tfrrs\.org/athletes/(\d+)/([^/\"<>&\s]+)/([^\"<>&\s]+?)(?:\.html)?(?=[\"<>&\s])",
-        result,
-    )
-    seen: set[tuple] = set()
-    matches: list[dict] = []
-    for athlete_id, school_slug, name_slug in raw:
-        key = (athlete_id, school_slug, name_slug)
-        if key in seen:
-            continue
-        seen.add(key)
-        matches.append(
-            {
-                "athlete_id": athlete_id,
-                "school": school_slug,
-                "name": name_slug,
-                "sport": None,
-                "url": f"{_BASE}/athletes/{athlete_id}/{school_slug}/{name_slug}.html",
-            }
-        )
-    return matches
-
-
 def _parse_team_roster(html: str) -> list[dict]:
     """Extract athlete links from a TFRRS team page.
 
@@ -303,63 +261,48 @@ def _parse_team_roster(html: str) -> list[dict]:
 
 
 def search_athlete(*, name: str, school: str = "") -> dict:
-    """Search for a TFRRS athlete by name, with optional school filter.
+    """Search the current XC and TF team roster pages for an athlete by name.
 
-    First checks the current team roster (fast, exact). If no match is found
-    — e.g. the athlete has graduated or transferred — falls back to a
-    DuckDuckGo Lite search scoped to tfrrs.org. Works for current and
-    historical athletes. No API keys required.
+    Only covers athletes on the current-season roster. Graduated or
+    transferred athletes will not appear — for those, retrieve their
+    profile URL from tfrrs.org and use get_athlete_profile directly.
 
     Args:
-        name: Athlete name to search for (e.g. "Katelyn Vuong").
-        school: School name or TFRRS team slug (e.g. "UC Davis" or
-            "CA_college_f_UC_Davis"). Optional but recommended to narrow
-            results when the name is common.
+        name: Athlete name to search for (e.g. "Lamiae Mamouni").
+        school: TFRRS team slug from the team page URL
+            (e.g. "CA_college_f_California_Baptist"). Required to narrow
+            the search to a specific school.
     """
     name_parts = name.lower().split()
     matches: list[dict] = []
     seen_keys: set[tuple] = set()
 
-    # Step 1: Try the current team roster pages if school looks like a
-    # TFRRS team slug (underscores, no spaces).
-    if school and "_" in school and " " not in school:
-        for sport in ("xc", "tf"):
-            url = f"{_BASE}/teams/{sport}/{school}.html"
-            result = _fetch(url)
-            if isinstance(result, dict):
-                continue
+    if not school:
+        return {"matches": matches}
 
-            for athlete in _parse_team_roster(result):
-                key = (athlete["athlete_id"], sport)
-                if key in seen_keys:
-                    continue
-                display = athlete["name"].replace("_", " ").lower()
-                if all(part in display for part in name_parts):
-                    seen_keys.add(key)
-                    matches.append(
-                        {
-                            **athlete,
-                            "sport": sport,
-                            "url": (
-                                f"{_BASE}/athletes/{athlete['athlete_id']}"
-                                f"/{athlete['school']}/{athlete['name']}.html"
-                            ),
-                        }
-                    )
+    for sport in ("xc", "tf"):
+        url = f"{_BASE}/teams/{sport}/{school}.html"
+        result = _fetch(url)
+        if isinstance(result, dict):
+            continue
 
-    # Step 2: Fall back to DuckDuckGo Lite search (covers all athletes,
-    # including graduated and transferred).
-    if not matches:
-        for m in _search_duckduckgo_lite(name, school):
-            # Filter by name — all parts of the search name must appear in
-            # the returned name slug to exclude partial DDG matches.
-            display = m["name"].replace("_", " ").lower()
-            if not all(part in display for part in name_parts):
+        for athlete in _parse_team_roster(result):
+            key = (athlete["athlete_id"], sport)
+            if key in seen_keys:
                 continue
-            key = (m["athlete_id"], m["school"], m["name"])
-            if key not in seen_keys:
+            display = athlete["name"].replace("_", " ").lower()
+            if all(part in display for part in name_parts):
                 seen_keys.add(key)
-                matches.append(m)
+                matches.append(
+                    {
+                        **athlete,
+                        "sport": sport,
+                        "url": (
+                            f"{_BASE}/athletes/{athlete['athlete_id']}"
+                            f"/{athlete['school']}/{athlete['name']}.html"
+                        ),
+                    }
+                )
 
     return {"matches": matches}
 
