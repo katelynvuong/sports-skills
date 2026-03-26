@@ -1,6 +1,10 @@
 ---
 name: xctf-data
-description: NCAA cross country and track & field athlete data via TFRRS (tfrrs.org). Fetch athlete profiles including all personal records (PRs), eligibility year, school, and full season-by-season results history. Zero config, no API keys. Use when: user asks about NCAA cross country, NCAA track and field, college running, TFRRS athlete profiles, personal records, PRs, XC or TF season results, or individual athlete performance history. Don't use when: user asks about professional track, Diamond League, or other sports — use nfl-data, nba-data, wnba-data, nhl-data, mlb-data, golf-data, cfb-data, cbb-data, tennis-data, fastf1, or volleyball-data. For betting use polymarket or kalshi. For news use sports-news.
+description: |
+  NCAA cross country and track & field athlete data via TFRRS (tfrrs.org). Fetch athlete profiles including all personal records (PRs), eligibility year, school, and full season-by-season results history. Zero config, no API keys.
+
+  Use when: user asks about NCAA cross country, NCAA track and field, college running, TFRRS athlete profiles, personal records, PRs, XC or TF season results, or individual athlete performance history.
+  Don't use when: user asks about professional track, Diamond League, or other sports — use nfl-data, nba-data, wnba-data, nhl-data, mlb-data, golf-data, cfb-data, cbb-data, tennis-data, fastf1, or volleyball-data. For betting use polymarket or kalshi. For news use sports-news.
 license: MIT
 compatibility: Requires Python 3.10+ and internet access to tfrrs.org. No API keys required.
 metadata:
