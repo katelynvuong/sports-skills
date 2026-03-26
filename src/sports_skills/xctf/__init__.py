@@ -11,18 +11,19 @@ from sports_skills._response import wrap
 from sports_skills.xctf import _connector
 
 
-def search_athlete(*, name: str, school: str) -> dict:
-    """Search XC and TF team roster pages for athletes matching a name.
+def search_athlete(*, name: str, school: str = "") -> dict:
+    """Search for a TFRRS athlete by name, with optional school filter.
 
-    Searches the current-season roster only. Athletes who have graduated or
-    transferred may not appear — use get_athlete_profile directly if you
-    have their athlete_id from their TFRRS profile URL.
+    First checks the current team roster (fast, exact). If no match is found
+    — e.g. the athlete has graduated or transferred — falls back to a
+    DuckDuckGo Lite search scoped to tfrrs.org. Works for current and
+    historical athletes. No API keys required.
 
     Args:
-        name: Athlete name to search for (e.g. "Lamiae Mamouni").
-        school: TFRRS team slug as it appears in the team page URL
-            (e.g. "CA_college_f_UC_Davis"). Find it at:
-            https://www.tfrrs.org/teams/{xc|tf}/{school}.html
+        name: Athlete name to search for (e.g. "Katelyn Vuong").
+        school: School name or TFRRS team slug (e.g. "UC Davis" or
+            "CA_college_f_UC_Davis"). Optional but recommended to narrow
+            results when the name is common.
     """
     result = _connector.search_athlete(name=name, school=school)
     return wrap(result)

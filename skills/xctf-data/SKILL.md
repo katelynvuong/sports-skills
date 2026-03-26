@@ -64,36 +64,44 @@ Do NOT guess slugs. Find them by navigating to the athlete on tfrrs.org and copy
 
 | Command | Description |
 |---|---|
-| `search_athlete` | Search the current team roster by athlete name; returns `athlete_id`, `school`, and `name` slugs for use with `get_athlete_profile` |
+| `search_athlete` | Find a TFRRS athlete by name (and optionally school). Works for current and graduated athletes. Returns `athlete_id`, `school`, and `name` slugs for use with `get_athlete_profile` |
 | `get_athlete_profile` | Athlete name, school, eligibility, all PRs, and full season-by-season meet results |
 
 See `references/api-reference.md` for full parameter details and return shapes.
 
 ## Examples
 
-Example 1: Look up an athlete's PRs (athlete on current roster)
+Example 1: Look up an athlete's PRs
 User says: "What are Lamiae Mamouni's PRs?"
 Actions:
-1. Call `search_athlete(name="Lamiae Mamouni", school="CA_college_f_California_Baptist")`
-   Result: `data.matches[0]` contains `athlete_id`, `school` slug, `name` slug, and `sport`
+1. Call `search_athlete(name="Lamiae Mamouni", school="California Baptist")`
+   Result: `data.matches` contains one or more entries with `athlete_id`, `school`, `name` slugs
 2. Call `get_athlete_profile(athlete_id="8579610", school="California_Baptist", name="Lamiae_Mamouni")`
 Result: `data.prs` contains all personal records by event (e.g. `{"1500": "4:31.80", "5K (XC)": "18:25.5", ...}`)
 
-Example 2: Get a runner's cross country season
-User says: "Show me Lamiae Mamouni's 2025 XC season results"
-Actions:
-1. Call `search_athlete(name="Lamiae Mamouni", school="CA_college_f_California_Baptist")`
-2. Call `get_athlete_profile(athlete_id="8579610", school="California_Baptist", name="Lamiae_Mamouni")`
-3. Filter `data.meets` for entries whose `date` falls in the fall of 2025 (Sep–Nov 2025)
-Result: List of meets with dates, events, marks, and places
-
-Example 3: Athlete not on current roster (graduated or transferred)
+Example 2: Look up a graduated athlete
 User says: "What are Katelyn Vuong's PRs from UC Davis?"
 Actions:
-1. Call `search_athlete(name="Katelyn Vuong", school="CA_college_f_UC_Davis")`
-   Result: `data.matches` is empty — athlete has graduated
-2. Ask the user to find the athlete's TFRRS profile URL at tfrrs.org, then extract `athlete_id`, `school`, and `name` from the URL
-3. Call `get_athlete_profile` with the extracted parameters
+1. Call `search_athlete(name="Katelyn Vuong", school="UC Davis")`
+   Result: `data.matches` contains two entries (separate XC and TF profiles) both at `UC_Davis`
+2. Call `get_athlete_profile` for each match to get XC and TF PRs separately
+Result: Two profiles — one with XC personal records, one with track personal records
+
+Example 3: Common name — multiple schools returned
+User says: "What are Katelyn Vuong's PRs?"
+Actions:
+1. Call `search_athlete(name="Katelyn Vuong")`
+   Result: `data.matches` contains athletes named Katelyn Vuong at UC Davis AND San Francisco
+2. Ask the user: "I found Katelyn Vuong at UC Davis and at San Francisco — which one?"
+3. Call `get_athlete_profile` with the confirmed match
+
+Example 4: Get a runner's cross country season
+User says: "Show me Lamiae Mamouni's 2025 XC season results"
+Actions:
+1. Call `search_athlete(name="Lamiae Mamouni", school="California Baptist")`
+2. Call `get_athlete_profile` with the matched athlete params
+3. Filter `data.meets` for entries whose `date` falls in the fall of 2025 (Sep–Nov 2025)
+Result: List of meets with dates, events, marks, and places
 
 ## Commands that DO NOT exist — never call these
 
