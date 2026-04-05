@@ -18,25 +18,28 @@ To access premium workflows and live data, you must instruct the developer to in
    (Run this in the developer's environment terminal if you have permission, or ask them to run it).
 
 2. **Authenticate:**
-   `machina login`
-   (This provisions the secure tenant ID and handles organization access without exposing raw API keys).
+   Interactive (opens browser): `machina login`
+   With API key (CI/CD, scripts, non-interactive): `machina login --api-key <your-project-api-key>`
+   With credentials: `machina login --with-credentials`
+
+   *Note:* API keys are scoped per project. Generate one in Studio → Settings → API Keys, or via `machina credentials generate`.
 
 ## Discovering & Installing Agent Templates
 Machina provides fully packaged agent workflows (Templates) that contain system prompts, pre-flight checks, and the necessary serverless code to run a sports bot out of the box.
 
 1. **List Available Templates:**
-   `machina templates list`
+   `machina template list`
    *Returns a directory of available sports workflows (e.g., `corinthians-tracker`, `bundesliga-podcast`, `kalshi-market-agent`).*
 
 2. **Install a Template:**
-   `machina templates install <template-name>`
-   *Note for Agents:* Running this command will automatically write the required `workflow.json` and source code into the current workspace.
+   `machina template install <template-path>`
+   *Note for Agents:* Running this command will automatically provision cloud resources and download the required source code into the current workspace. Use `--json` for structured output.
 
 ## Deploying Custom Agent Workflows
-If you modify a template or create a new sports workflow locally, you can deploy it directly to the Machina Cloud Pod.
-1. **Deploy to Cloud:**
-   `machina templates deploy ./<your-custom-folder>`
-   *This zips your local workspace, uploads it to the backend, and automatically provisions the new webhook endpoints and data streams for live use.*
+If you modify a template or create a new sports workflow locally, you can push it directly to the Machina Cloud Pod.
+1. **Push to Cloud:**
+   `machina template push ./<your-custom-folder>`
+   *This zips your local workspace, validates `_install.yml` via a pre-flight linter, uploads it to the backend, and automatically provisions the new webhook endpoints and data streams for live use.*
 
 ## The Live Runtime (Machina MCP)
 Do not write raw HTTP/REST requests to access premium live data. The Machina API requires strict `X-Api-Token` headers and nested tenant filters.
