@@ -6,7 +6,7 @@ description: |
   Use when: user asks about NCAA cross country, NCAA track and field, college running, TFRRS athlete profiles, personal records, PRs, XC or TF season results, individual athlete performance history, or XC/TF news.
   Don't use when: user asks about professional track, Diamond League, or other sports — use nfl-data, nba-data, wnba-data, nhl-data, mlb-data, golf-data, cfb-data, cbb-data, tennis-data, fastf1, or volleyball-data. For betting use polymarket or kalshi.
 license: MIT
-compatibility: Requires Python 3.10+ and internet access to tfrrs.org. No API keys required.
+compatibility: Requires Python 3.10+ and internet access to tfrrs.org and thestridereport.com. No API keys required.
 metadata:
   author: machina-sports
   version: "0.1.0"
@@ -26,13 +26,14 @@ If `pip install` fails, install from GitHub:
 ```bash
 pip install git+https://github.com/machina-sports/sports-skills.git
 ```
-Requires Python 3.10+. No API keys required. All data comes from TFRRS public pages.
+Requires Python 3.10+. No API keys required. All data comes from TFRRS public pages and The Stride Report RSS feed.
 
 ## Quick Start
 
 CLI (preferred):
 ```bash
 sports-skills xctf get_athlete_profile --athlete_id=8579610 --school=California_Baptist --name=Lamiae_Mamouni
+sports-skills xctf get_news --limit=5
 ```
 
 Python SDK:
@@ -66,7 +67,9 @@ Do NOT guess slugs. Find them by navigating to the athlete on tfrrs.org and copy
 |---|---|
 | `search_athlete` | Search the current team roster by name; returns `athlete_id`, `school`, and `name` slugs for use with `get_athlete_profile`. Current athletes only — graduated athletes require a direct TFRRS URL |
 | `get_athlete_profile` | Athlete name, school, eligibility, all PRs, and full season-by-season meet results |
-| `get_news` | Fetch recent XC/TF articles from The Stride Report (thestridereport.com) |
+| `get_team_roster` | Full XC and/or TF roster for a team |
+| `get_meet_results` | All event results and team scores from a TFRRS meet |
+| `get_news` | Recent XC/TF articles from The Stride Report (thestridereport.com) |
 
 See `references/api-reference.md` for full parameter details and return shapes.
 
@@ -98,10 +101,28 @@ Actions:
 4. Extract params from the URL and call `get_athlete_profile(athlete_id="7899206", school="UC_Davis", name="Katelyn_Vuong")`
 Note: TFRRS creates separate profiles for XC and TF. If both exist, fetch both IDs for complete PRs.
 
+Example 4: Get a team's current roster
+User says: "Show me the UC Davis women's XC roster"
+Actions:
+1. Call `get_team_roster(school="CA_college_f_UC_Davis", sport="xc")`
+Result: List of athletes with name, year, and profile slugs
+
+Example 5: Get results from a meet
+User says: "Show me the results from the Stanford Invitational"
+Actions:
+1. Find the meet on tfrrs.org and copy the meet_id and slug from the URL (e.g. tfrrs.org/results/95890/Stanford_Invitational)
+2. Call `get_meet_results(meet_id="95890", slug="Stanford_Invitational")`
+Result: All event results and team scores from the meet
+
+Example 6: Get the latest XC/TF news
+User says: "What's the latest college track news?"
+Actions:
+1. Call `get_news(limit=10)`
+Result: Recent articles from The Stride Report with title, date, summary, and link
+
 ## Commands that DO NOT exist — never call these
 
 - ~~`get_team_rankings`~~ — does not exist. Use `get_athlete_profile` for individual data.
-- ~~`get_meet_results`~~ — does not exist. Use `get_athlete_profile` for an athlete's results.
 - ~~`search_athletes`~~ — does not exist. The correct command is `search_athlete` (no trailing 's').
 - ~~`fetch_news`~~ — does not exist. The correct command is `get_news`.
 
@@ -110,20 +131,32 @@ If a command is not listed in the Commands table above, it does not exist.
 ## Error Handling
 
 When a command fails, **do not surface raw errors to the user**. Instead:
-1. Confirm `athlete_id`, `school`, and `name` match the TFRRS URL exactly (case-sensitive)
-2. Verify the URL is valid: `https://www.tfrrs.org/athletes/{athlete_id}/{school}/{name}.html`
-3. Report failure with a clean message only after exhausting alternatives
+1. For `get_athlete_profile`: confirm `athlete_id`, `school`, and `name` match the TFRRS URL exactly (case-sensitive)
+2. For `search_athlete`: verify the team slug is correct by checking the team's TFRRS page URL
+3. For `get_meet_results`: verify the `meet_id` and `slug` match the meet's TFRRS URL exactly
+4. For `get_team_roster`: verify the school slug is correct
+5. For `get_news`: if the feed fails, inform the user that The Stride Report may be temporarily unavailable
+6. Report failure with a clean message only after exhausting alternatives
 
 ## Troubleshooting
 
 **`sports-skills` command not found**
 Run `pip install sports-skills` or install from GitHub (see Setup above).
 
-**HTTP 404**
+**HTTP 404 on athlete profile**
 The `school` or `name` slug does not match the TFRRS URL exactly. Slugs are case-sensitive and use underscores. Copy directly from tfrrs.org.
 
 **`prs` returns empty dict**
 The athlete's profile page may be very new or structured differently. Check the URL directly on tfrrs.org.
+
+**`search_athlete` returns empty matches**
+The athlete is likely graduated or transferred. See Example 3 above for how to handle this.
+
+**`get_meet_results` returns no events**
+The `meet_id` or `slug` may be incorrect. Copy both directly from the meet's TFRRS URL.
+
+**`get_news` fails or returns no articles**
+The Stride Report RSS feed may be temporarily unavailable. Try again later.
 
 **Connection errors or timeouts**
 TFRRS may be temporarily unavailable. Requests are throttled to 1 per second automatically — wait a moment and retry.
