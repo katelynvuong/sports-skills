@@ -8,12 +8,12 @@ URL format: https://www.tfrrs.org/athletes/{id}/{School_Slug}/{First_Last}.html
 
 from __future__ import annotations
 
+import html
 import re
 import time
 import urllib.error
 import urllib.request
 
-import html
 import feedparser
 
 _BASE = "https://www.tfrrs.org"
