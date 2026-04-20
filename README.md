@@ -41,7 +41,7 @@ A collection of agent skills that wrap **publicly available** sports data source
 - **College Basketball (CBB)**: ESPN — scores, standings, rosters, schedules, AP/Coaches rankings, news
 - **Golf**: ESPN — PGA Tour, LPGA, DP World Tour leaderboards, schedules, player profiles, news
 - **Volleyball**: Nevobo — Dutch volleyball (Eredivisie, Topdivisie, Superdivisie) standings, schedules, results, clubs
-- **XC/TF**:
+- **XC/TF**: TFRRS and The Stride Report — NCAA cross country and track & field athlete profiles, personal records, team rosters, meet results, news
 - **Formula 1**: FastF1 open-source library — sessions, lap data, race results
 - **Prediction Markets**: Kalshi and Polymarket public APIs — markets, prices, order books
 - **Sports News**: RSS feeds and Google News — any public feed
@@ -70,7 +70,7 @@ Each skill is a SKILL.md file that any compatible AI agent can load and use imme
 | `cbb-data` | College Basketball (CBB) | 9 | ESPN |
 | `golf-data` | Golf (PGA/LPGA/DP World) | 4 | ESPN |
 | `volleyball-data` | Volleyball (Dutch) | 10 | Nevobo |
-| `xctf-data` | Cross Country & Track | 2 | TFRRS |
+| `xctf-data` | Cross Country & Track | 5 | TFRRS, The Stride Report |
 | `fastf1` | Formula 1 | 6 | FastF1 (free library) |
 | `sports-news` | Multi-sport | 2 | Any RSS feed, Google News |
 | `metadata` | Multi-sport | 5 | TheSportsDB (free API) |
@@ -370,6 +370,8 @@ NCAA cross country and track & field athlete data via [TFRRS](https://www.tfrrs.
 |---------|-------------|
 | `search_athlete` | Search current team roster by name; returns slugs needed for `get_athlete_profile` |
 | `get_athlete_profile` | Athlete PRs, eligibility, school, and full meet results history |
+| `get_team_roster` | Full XC and/or TF roster for a team |
+| `get_meet_results` | All event results and team scores from a TFRRS meet |
 | `get_news` | Recent XC/TF articles from The Stride Report |
 
 ### fastf1
@@ -451,7 +453,7 @@ sports-skills.sh
 │   ├── cbb-data/SKILL.md             # College basketball scores, rankings
 │   ├── golf-data/SKILL.md            # Golf leaderboards, schedules, profiles
 │   ├── volleyball-data/SKILL.md      # Dutch volleyball standings, results, clubs
-│   ├── xctf-data/SKILL.md            # NCAA XC/TF athlete profiles, PRs, results (TFRRS)
+│   ├── xctf-data/SKILL.md            # NCAA XC/TF athlete profiles, PRs, results (TFRRS) + news (The Stride Report)
 │   ├── fastf1/SKILL.md               # F1 sessions, laps, results
 │   ├── kalshi/SKILL.md               # Prediction markets (CFTC)
 │   ├── polymarket/SKILL.md           # Prediction markets (crypto)
