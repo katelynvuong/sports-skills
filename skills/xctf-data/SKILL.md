@@ -1,10 +1,10 @@
 ---
 name: xctf-data
 description: |
-  NCAA cross country and track & field athlete data via TFRRS (tfrrs.org). Fetch athlete profiles including all personal records (PRs), eligibility year, school, and full season-by-season results history. Zero config, no API keys.
+  NCAA cross country and track & field athlete data via TFRRS (tfrrs.org) and news via The Stride Report. Fetch athlete profiles including all personal records (PRs), eligibility year, school, full season-by-season results history, and XC/TF news. Zero config, no API keys.
 
-  Use when: user asks about NCAA cross country, NCAA track and field, college running, TFRRS athlete profiles, personal records, PRs, XC or TF season results, or individual athlete performance history.
-  Don't use when: user asks about professional track, Diamond League, or other sports — use nfl-data, nba-data, wnba-data, nhl-data, mlb-data, golf-data, cfb-data, cbb-data, tennis-data, fastf1, or volleyball-data. For betting use polymarket or kalshi. For news use sports-news.
+  Use when: user asks about NCAA cross country, NCAA track and field, college running, TFRRS athlete profiles, personal records, PRs, XC or TF season results, individual athlete performance history, or XC/TF news.
+  Don't use when: user asks about professional track, Diamond League, or other sports — use nfl-data, nba-data, wnba-data, nhl-data, mlb-data, golf-data, cfb-data, cbb-data, tennis-data, fastf1, or volleyball-data. For betting use polymarket or kalshi.
 license: MIT
 compatibility: Requires Python 3.10+ and internet access to tfrrs.org. No API keys required.
 metadata:
@@ -66,6 +66,7 @@ Do NOT guess slugs. Find them by navigating to the athlete on tfrrs.org and copy
 |---|---|
 | `search_athlete` | Search the current team roster by name; returns `athlete_id`, `school`, and `name` slugs for use with `get_athlete_profile`. Current athletes only — graduated athletes require a direct TFRRS URL |
 | `get_athlete_profile` | Athlete name, school, eligibility, all PRs, and full season-by-season meet results |
+| `get_news` | Fetch recent XC/TF articles from The Stride Report (thestridereport.com) |
 
 See `references/api-reference.md` for full parameter details and return shapes.
 
@@ -101,8 +102,8 @@ Note: TFRRS creates separate profiles for XC and TF. If both exist, fetch both I
 
 - ~~`get_team_rankings`~~ — does not exist. Use `get_athlete_profile` for individual data.
 - ~~`get_meet_results`~~ — does not exist. Use `get_athlete_profile` for an athlete's results.
-- ~~`get_performance_list`~~ — does not exist.
 - ~~`search_athletes`~~ — does not exist. The correct command is `search_athlete` (no trailing 's').
+- ~~`fetch_news`~~ — does not exist. The correct command is `get_news`.
 
 If a command is not listed in the Commands table above, it does not exist.
 

@@ -13,6 +13,9 @@ import time
 import urllib.error
 import urllib.request
 
+import html
+import feedparser
+
 _BASE = "https://www.tfrrs.org"
 _UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -326,3 +329,294 @@ def get_athlete_profile(
     profile["athlete_id"] = athlete_id
     profile["url"] = url
     return profile
+
+
+# ---------------------------------------------------------------------------
+# Team roster
+# ---------------------------------------------------------------------------
+
+
+def _gender_slugs(school: str) -> list[tuple[str, str]]:
+    """Return [(slug, gender_label), ...] for both genders when possible.
+
+    TFRRS embeds gender in school slugs as ``_f_`` (women) or ``_m_`` (men).
+    If neither marker is present the slug is returned as-is with label "unknown".
+    """
+    if "_f_" in school:
+        return [(school, "women"), (school.replace("_f_", "_m_", 1), "men")]
+    if "_m_" in school:
+        return [(school.replace("_m_", "_f_", 1), "women"), (school, "men")]
+    return [(school, "unknown")]
+
+
+def get_team_roster(*, school: str, sport: str = "both") -> dict:
+    """Fetch the current roster for a TFRRS team (both genders).
+
+    Args:
+        school: TFRRS team slug from the team page URL
+            (e.g. "CA_college_f_Stanford" or "CA_college_m_Stanford").
+            Both the women's and men's rosters are fetched automatically
+            regardless of which gender slug you provide.
+        sport: Which roster to fetch — "xc", "tf", or "both" (default).
+    """
+    sports = ["xc", "tf"] if sport == "both" else [sport]
+    athletes: list[dict] = []
+    seen: set[tuple] = set()
+
+    for sp in sports:
+        for slug, gender in _gender_slugs(school):
+            url = f"{_BASE}/teams/{sp}/{slug}.html"
+            result = _fetch(url)
+            if isinstance(result, dict):
+                continue
+            for athlete in _parse_team_roster(result):
+                key = (athlete["athlete_id"], athlete["name"])
+                if key in seen:
+                    continue
+                seen.add(key)
+                athletes.append(
+                    {
+                        **athlete,
+                        "gender": gender,
+                        "sport": sp,
+                        "url": (
+                            f"{_BASE}/athletes/{athlete['athlete_id']}"
+                            f"/{athlete['school']}/{athlete['name']}.html"
+                        ),
+                    }
+                )
+
+    return {"school": school, "sport": sport, "count": len(athletes), "athletes": athletes}
+
+
+# ---------------------------------------------------------------------------
+# Meet results
+# ---------------------------------------------------------------------------
+
+
+def _parse_team_scores(html: str) -> dict:
+    """Parse men's and women's team scores from the main meet index page."""
+    scores: dict = {}
+    for gender, table_id in (("men", "team_scores_m"), ("women", "team_scores_f")):
+        table_m = re.search(
+            rf'<table[^>]+id="{table_id}"[^>]*>(.*?)</table>',
+            html,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if not table_m:
+            continue
+        rows = re.findall(
+            r"<tr[^>]*>(.*?)</tr>", table_m.group(1), re.DOTALL | re.IGNORECASE
+        )
+        entries: list[dict] = []
+        for row_html in rows:
+            if re.search(r"<th", row_html, re.IGNORECASE):
+                continue
+            cells = re.findall(
+                r"<td[^>]*>(.*?)</td>", row_html, re.DOTALL | re.IGNORECASE
+            )
+            texts = [_strip_tags(c) for c in cells]
+            texts = [t for t in texts if t]
+            if len(texts) >= 3:
+                entries.append(
+                    {"rank": texts[0], "team": texts[1], "score": texts[2]}
+                )
+        if entries:
+            scores[gender] = entries
+    return scores
+
+
+def _parse_compiled_results(html: str, gender: str) -> list[dict]:
+    """Parse one compiled results page (men's or women's) into a list of events."""
+    html = re.sub(
+        r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE
+    )
+    html = re.sub(
+        r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE
+    )
+
+    events: list[dict] = []
+
+    # Each event section is preceded by <a class="anchor" name="{event_id}"></a>
+    sections = re.split(
+        r'<a\s+class="anchor"[^>]*name="[^"]*"[^>]*>\s*</a>',
+        html,
+        flags=re.IGNORECASE,
+    )
+
+    for section in sections[1:]:
+        # Event name lives in <h3 class="font-weight-500 pl-5">
+        h3_m = re.search(
+            r'<h3[^>]*class="[^"]*font-weight-500[^"]*pl-5[^"]*"[^>]*>(.*?)</h3>',
+            section,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if not h3_m:
+            continue
+        event_name = _strip_tags(h3_m.group(1)).strip()
+        if not event_name:
+            continue
+
+        # Wind (optional, sprint/jump events only)
+        wind_m = re.search(
+            r'<span[^>]*class="[^"]*wind-text[^"]*"[^>]*>(.*?)</span>',
+            section,
+            re.DOTALL | re.IGNORECASE,
+        )
+        wind = _strip_tags(wind_m.group(1)).strip() if wind_m else ""
+
+        # Results table
+        table_m = re.search(
+            r"<table[^>]*>(.*?)</table>", section, re.DOTALL | re.IGNORECASE
+        )
+        if not table_m:
+            continue
+
+        rows = re.findall(
+            r"<tr[^>]*>(.*?)</tr>", table_m.group(1), re.DOTALL | re.IGNORECASE
+        )
+
+        results: list[dict] = []
+        for row_html in rows:
+            # Skip field-event sub-rows (attempt breakdowns shown below each athlete)
+            if "div-subRow-table" in row_html or "border-right-0" in row_html:
+                continue
+            # Skip header rows
+            if re.search(r"<th", row_html, re.IGNORECASE):
+                continue
+
+            cells = re.findall(
+                r"<td[^>]*>(.*?)</td>", row_html, re.DOTALL | re.IGNORECASE
+            )
+            texts = [_strip_tags(c) for c in cells]
+            texts = [t for t in texts if t]
+
+            # Need at least: place, name, year, team, mark
+            if len(texts) < 5:
+                continue
+
+            # Layout: PL, NAME, YEAR, TEAM, [mark(s)...], SC
+            # SC is always the last column; marks are everything between TEAM and SC.
+            place = texts[0]
+            name = texts[1]
+            year = texts[2]
+            team = texts[3]
+            score = texts[-1]
+            marks = texts[4:-1]  # one mark for track; multiple attempts for field
+
+            result: dict = {
+                "place": place,
+                "name": name,
+                "year": year,
+                "team": team,
+                "marks": marks,
+                "score": score,
+            }
+            results.append(result)
+
+        event: dict = {"event": event_name, "gender": gender, "results": results}
+        if wind:
+            event["wind"] = wind
+        events.append(event)
+
+    return events
+
+
+def get_meet_results(*, meet_id: str, slug: str) -> dict:
+    """Fetch all event results and team scores from a TFRRS meet.
+
+    Fetches the main page (team scores) plus the men's and women's compiled
+    results pages (individual event results).
+
+    Args:
+        meet_id: TFRRS numeric meet ID (e.g. "95890" from
+            tfrrs.org/results/95890/BU_vs_BU_Dual).
+        slug: Meet name slug as it appears in the TFRRS URL
+            (e.g. "BU_vs_BU_Dual").
+    """
+    base_url = f"{_BASE}/results/{meet_id}/{slug}"
+
+    # --- Main page: meet metadata + team scores ---
+    main_html = _fetch(base_url)
+    if isinstance(main_html, dict):
+        return main_html
+
+    main_html_clean = re.sub(
+        r"<script[^>]*>.*?</script>", "", main_html, flags=re.DOTALL | re.IGNORECASE
+    )
+    main_html_clean = re.sub(
+        r"<style[^>]*>.*?</style>", "", main_html_clean, flags=re.DOTALL | re.IGNORECASE
+    )
+
+    # Meet name from panel-title h3
+    meet_name = ""
+    name_m = re.search(
+        r'<h3[^>]*class="[^"]*panel-title[^"]*"[^>]*>(.*?)</h3>',
+        main_html_clean,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if name_m:
+        meet_name = _strip_tags(name_m.group(1)).strip()
+
+    # Date and location from panel-heading-normal-text spans
+    date_m = re.search(
+        r"([A-Z][a-z]{2,8}\.?\s+\d{1,2}(?:[–\-]\d{1,2})?,\s*\d{4})",
+        main_html_clean,
+    )
+    meet_date = date_m.group(1) if date_m else ""
+
+    team_scores = _parse_team_scores(main_html_clean)
+
+    # --- Compiled results: men's and women's ---
+    events: list[dict] = []
+    for gender, code in (("women", "f"), ("men", "m")):
+        comp_url = f"{_BASE}/results/{meet_id}/{code}/{slug}"
+        comp_html = _fetch(comp_url)
+        if isinstance(comp_html, dict):
+            continue
+        events.extend(_parse_compiled_results(comp_html, gender))
+
+    return {
+        "meet": meet_name,
+        "date": meet_date,
+        "meet_id": meet_id,
+        "slug": slug,
+        "url": base_url,
+        "team_scores": team_scores,
+        "events": events,
+    }
+
+
+_STRIDER_FEED = "https://www.thestridereport.com/blog-feed.xml"
+
+
+def get_news(*, limit: int | None = None) -> dict:
+    """Fetch recent articles from The Stride Report RSS feed."""
+    feed = feedparser.parse(_STRIDER_FEED)
+    if feed.bozo and not feed.entries:
+        return {"error": f"Failed to fetch Stride Report feed: {feed.bozo_exception}"}
+
+    items = []
+    for entry in feed.entries:
+        tags = [t.get("term", "") for t in entry.get("tags", [])]
+        enclosure = ""
+        for enc in entry.get("enclosures", []):
+            if enc.get("href"):
+                enclosure = enc["href"]
+                break
+        items.append({
+            "title": html.unescape(entry.get("title", "")),
+            "link": entry.get("link", ""),
+            "date": entry.get("published", ""),
+            "summary": html.unescape(entry.get("summary", "")),
+            "categories": tags,
+            "author": entry.get("author", ""),
+            "image": enclosure,
+        })
+
+    if limit is not None:
+        items = items[:limit]
+
+    return {"source": "The Stride Report", "count": len(items), "articles": items}
+
+

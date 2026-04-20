@@ -185,6 +185,58 @@ Common causes: incorrect `school` or `name` slug, athlete profile not yet on TFR
 
 ---
 
+---
+
+## `get_news`
+
+```bash
+sports-skills xctf get_news
+sports-skills xctf get_news --limit=5
+```
+
+Fetches recent articles from The Stride Report RSS feed (`thestridereport.com/blog-feed.xml`).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `limit` | int | No | Max number of articles to return. Omit for all available. |
+
+### Return shape
+
+```json
+{
+  "status": true,
+  "message": "",
+  "data": {
+    "source": "The Stride Report",
+    "count": 10,
+    "articles": [
+      {
+        "title": "First Thoughts: McFarland Runs 3:33...",
+        "link": "https://www.thestridereport.com/post/first-thoughts-...",
+        "date": "Sun, 19 Apr 2026 00:27:30 GMT",
+        "summary": "Look, there was A LOT of chaos that took place this weekend...",
+        "categories": ["D1", "OUTDOORS"],
+        "author": "Admin (Garrett Zatlin)",
+        "image": "https://static.wixstatic.com/media/..."
+      }
+    ]
+  }
+}
+```
+
+### Field notes
+
+| Field | Notes |
+|---|---|
+| `articles[].categories` | List of topic tags from the feed (e.g. `["D1", "OUTDOORS"]`, `["XC"]`). May be empty. |
+| `articles[].image` | URL of the article's lead image from the RSS enclosure. Empty string if none. |
+| `articles[].summary` | Short excerpt — typically truncated with "...". Not the full article body. |
+| `articles[].date` | RFC 822 timestamp string as published in the feed. |
+
+---
+
 ## Notes on TFRRS data
 
 - **Relay results** appear as events like `4x800` or `DMR` with a split/relay time.

@@ -41,6 +41,7 @@ A collection of agent skills that wrap **publicly available** sports data source
 - **College Basketball (CBB)**: ESPN — scores, standings, rosters, schedules, AP/Coaches rankings, news
 - **Golf**: ESPN — PGA Tour, LPGA, DP World Tour leaderboards, schedules, player profiles, news
 - **Volleyball**: Nevobo — Dutch volleyball (Eredivisie, Topdivisie, Superdivisie) standings, schedules, results, clubs
+- **XC/TF**:
 - **Formula 1**: FastF1 open-source library — sessions, lap data, race results
 - **Prediction Markets**: Kalshi and Polymarket public APIs — markets, prices, order books
 - **Sports News**: RSS feeds and Google News — any public feed
@@ -69,7 +70,7 @@ Each skill is a SKILL.md file that any compatible AI agent can load and use imme
 | `cbb-data` | College Basketball (CBB) | 9 | ESPN |
 | `golf-data` | Golf (PGA/LPGA/DP World) | 4 | ESPN |
 | `volleyball-data` | Volleyball (Dutch) | 10 | Nevobo |
-| `xctf-data` | NCAA Cross Country & Track | 2 | TFRRS |
+| `xctf-data` | Cross Country & Track | 2 | TFRRS |
 | `fastf1` | Formula 1 | 6 | FastF1 (free library) |
 | `sports-news` | Multi-sport | 2 | Any RSS feed, Google News |
 | `metadata` | Multi-sport | 5 | TheSportsDB (free API) |
@@ -167,7 +168,7 @@ Pick the sports you need. Each skill installs independently.
 | `cbb-data` | College Basketball | `npx skills add machina-sports/sports-skills@cbb-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/cbb-data) |
 | `golf-data` | Golf (PGA/LPGA/DP World) | `npx skills add machina-sports/sports-skills@golf-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/golf-data) |
 | `volleyball-data` | Volleyball (Dutch) | `npx skills add machina-sports/sports-skills@volleyball-data` | [skills.sh](https://skills.sh/machina-sports/sports-skills/volleyball-data) |
-| `xctf-data` | NCAA XC & Track & Field | `npx skills add machina-sports/sports-skills@xctf-data` | — |
+| `xctf-data` | XC & Track & Field | `npx skills add machina-sports/sports-skills@xctf-data` | — |
 | `fastf1` | Formula 1 | `npx skills add machina-sports/sports-skills@fastf1` | [skills.sh](https://skills.sh/machina-sports/sports-skills/fastf1) |
 | `sports-news` | Multi-sport News | `npx skills add machina-sports/sports-skills@sports-news` | [skills.sh](https://skills.sh/machina-sports/sports-skills/sports-news) |
 
@@ -363,12 +364,13 @@ Dutch volleyball data via the Nevobo (Nederlandse Volleybalbond) open API. Cover
 
 ### xctf-data
 
-NCAA cross country and track & field athlete data via [TFRRS](https://www.tfrrs.org) (Track & Field Results Reporting System). Athlete profiles, personal records, and full results history. No API keys required.
+NCAA cross country and track & field athlete data via [TFRRS](https://www.tfrrs.org) (Track & Field Results Reporting System) and news via [The Stride Report](https://www.thestridereport.com). Athlete profiles, personal records, full results history, and XC/TF news. No API keys required.
 
 | Command | Description |
 |---------|-------------|
 | `search_athlete` | Search current team roster by name; returns slugs needed for `get_athlete_profile` |
 | `get_athlete_profile` | Athlete PRs, eligibility, school, and full meet results history |
+| `get_news` | Recent XC/TF articles from The Stride Report |
 
 ### fastf1
 
