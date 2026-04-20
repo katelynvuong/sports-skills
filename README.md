@@ -368,11 +368,11 @@ NCAA cross country and track & field athlete data via [TFRRS](https://www.tfrrs.
 
 | Command | Description |
 |---------|-------------|
-| `search_athlete` | Search current team roster by name; returns slugs needed for `get_athlete_profile` |
+| `search_athlete` | Roster lookup by name; returns slugs for `get_athlete_profile` (agent-facing) |
 | `get_athlete_profile` | Athlete PRs, eligibility, school, and full meet results history |
 | `get_team_roster` | Full XC and/or TF roster for a team |
 | `get_meet_results` | All event results and team scores from a TFRRS meet |
-| `get_news` | Recent XC/TF articles from The Stride Report |
+| `get_news` | XC/TF news articles |
 
 ### fastf1
 
@@ -453,7 +453,7 @@ sports-skills.sh
 │   ├── cbb-data/SKILL.md             # College basketball scores, rankings
 │   ├── golf-data/SKILL.md            # Golf leaderboards, schedules, profiles
 │   ├── volleyball-data/SKILL.md      # Dutch volleyball standings, results, clubs
-│   ├── xctf-data/SKILL.md            # NCAA XC/TF athlete profiles, PRs, results (TFRRS) + news (The Stride Report)
+│   ├── xctf-data/SKILL.md            # NCAA XC/TF results, PRs, profiles, news
 │   ├── fastf1/SKILL.md               # F1 sessions, laps, results
 │   ├── kalshi/SKILL.md               # Prediction markets (CFTC)
 │   ├── polymarket/SKILL.md           # Prediction markets (crypto)
@@ -551,6 +551,8 @@ This project does not own, license, or redistribute any sports data. Each skill 
 | Kalshi | Official public API | Yes — [Trade API v2](https://trading-api.readme.io) |
 | Polymarket | Official public APIs | Yes — [Gamma](https://gamma-api.polymarket.com) + [CLOB](https://docs.polymarket.com) |
 | Nevobo | Official public API | Yes — [Nevobo API](https://api.nevobo.nl) (open, unauthenticated) |
+| TFRRS | Public web data | No — community access, subject to their ToS |
+| The Stride Report | Public RSS feed | No — standard RSS syndication, subject to their ToS |
 | RSS / Google News | Standard RSS protocol | Yes — RSS is designed for syndication |
 
 **Important:**
@@ -573,6 +575,8 @@ This project is built on top of great open-source work and public APIs:
 - **[Understat](https://understat.com)** — for xG data across the top 5 European leagues.
 - **[openfootball](https://github.com/openfootball/football.json)** — open public domain football data (CC0). Used as a fallback for schedules, standings, and team lists when ESPN is unavailable. Covers 10 leagues.
 - **[FastF1](https://github.com/theOehrly/Fast-F1)** — the backbone of our Formula 1 skill. Thanks to theOehrly and contributors.
+- **[TFRRS](https://www.tfrrs.org)** — Track & Field Results Reporting System, for NCAA cross country and track & field athlete profiles, personal records, rosters, and meet results.
+- **[The Stride Report](https://www.thestridereport.com)** — for NCAA XC/TF news coverage via their public RSS feed.
 - **[feedparser](https://github.com/kurtmckee/feedparser)** — reliable RSS/Atom parsing for the news skill.
 - **[Kalshi](https://kalshi.com)** and **[Polymarket](https://polymarket.com)** — for their public market data APIs.
 - **[skills.sh](https://skills.sh)** — the open agent skills directory and CLI.
