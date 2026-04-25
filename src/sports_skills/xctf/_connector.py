@@ -273,8 +273,9 @@ def search_athlete(*, name: str, school: str = "") -> dict:
     Args:
         name: Athlete name to search for (e.g. "Lamiae Mamouni").
         school: TFRRS team slug from the team page URL
-            (e.g. "CA_college_f_California_Baptist"). Required to narrow
-            the search to a specific school.
+            (e.g. "CA_college_f_California_Baptist"). Both the women's and
+            men's rosters are searched automatically regardless of which
+            gender slug you provide.
     """
     name_parts = name.lower().split()
     matches: list[dict] = []
@@ -284,28 +285,29 @@ def search_athlete(*, name: str, school: str = "") -> dict:
         return {"matches": matches}
 
     for sport in ("xc", "tf"):
-        url = f"{_BASE}/teams/{sport}/{school}.html"
-        result = _fetch(url)
-        if isinstance(result, dict):
-            continue
-
-        for athlete in _parse_team_roster(result):
-            key = (athlete["athlete_id"], sport)
-            if key in seen_keys:
+        for slug, _ in _gender_slugs(school):
+            url = f"{_BASE}/teams/{sport}/{slug}.html"
+            result = _fetch(url)
+            if isinstance(result, dict):
                 continue
-            display = athlete["name"].replace("_", " ").lower()
-            if all(part in display for part in name_parts):
-                seen_keys.add(key)
-                matches.append(
-                    {
-                        **athlete,
-                        "sport": sport,
-                        "url": (
-                            f"{_BASE}/athletes/{athlete['athlete_id']}"
-                            f"/{athlete['school']}/{athlete['name']}.html"
-                        ),
-                    }
-                )
+
+            for athlete in _parse_team_roster(result):
+                key = (athlete["athlete_id"], sport)
+                if key in seen_keys:
+                    continue
+                display = athlete["name"].replace("_", " ").lower()
+                if all(part in display for part in name_parts):
+                    seen_keys.add(key)
+                    matches.append(
+                        {
+                            **athlete,
+                            "sport": sport,
+                            "url": (
+                                f"{_BASE}/athletes/{athlete['athlete_id']}"
+                                f"/{athlete['school']}/{athlete['name']}.html"
+                            ),
+                        }
+                    )
 
     return {"matches": matches}
 

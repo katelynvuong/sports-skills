@@ -65,7 +65,7 @@ Do NOT guess slugs. Find them by navigating to the athlete on tfrrs.org and copy
 
 | Command | Description |
 |---|---|
-| `search_athlete` | Search the current team roster by name; returns `athlete_id`, `school`, and `name` slugs for use with `get_athlete_profile`. Current athletes only — graduated athletes require a direct TFRRS URL |
+| `search_athlete` | Search the current team roster by name; returns `athlete_id`, `school`, and `name` slugs for use with `get_athlete_profile`. Searches both genders automatically. Current athletes only — graduated athletes require a direct TFRRS URL |
 | `get_athlete_profile` | Athlete name, school, eligibility, all PRs, and full season-by-season meet results |
 | `get_team_roster` | Full XC and/or TF roster for a team |
 | `get_meet_results` | All event results and team scores from a TFRRS meet |
