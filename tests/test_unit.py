@@ -1590,7 +1590,8 @@ class TestXctfGetNews:
         )
 
         result = get_news()
-        assert "error" in result
+        assert result["error"] is True
+        assert "Stride Report" in result["message"]
 
     def test_html_entities_unescaped(self, monkeypatch):
         entries = [

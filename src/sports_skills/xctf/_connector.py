@@ -590,7 +590,7 @@ def get_news(*, limit: int | None = None) -> dict:
     """Fetch recent articles from The Stride Report RSS feed."""
     feed = feedparser.parse(_STRIDER_FEED)
     if feed.bozo and not feed.entries:
-        return {"error": f"Failed to fetch Stride Report feed: {feed.bozo_exception}"}
+        return {"error": True, "message": f"Failed to fetch Stride Report feed: {feed.bozo_exception}"}
 
     items = []
     for entry in feed.entries:
