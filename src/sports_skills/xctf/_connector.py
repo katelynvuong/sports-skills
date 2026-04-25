@@ -8,11 +8,11 @@ URL format: https://www.tfrrs.org/athletes/{id}/{School_Slug}/{First_Last}.html
 
 from __future__ import annotations
 
-import html
 import re
 import time
 import urllib.error
 import urllib.request
+from html import unescape
 
 import feedparser
 
@@ -67,16 +67,10 @@ def _fetch(url: str) -> str | dict:
         return {"error": True, "message": str(e)}
 
 
-def _strip_tags(html: str) -> str:
+def _strip_tags(value: str) -> str:
     """Strip HTML tags and normalize whitespace."""
-    text = re.sub(r"<[^>]+>", " ", html)
-    text = (
-        text.replace("&nbsp;", " ")
-        .replace("&amp;", "&")
-        .replace("&uarr;", "")
-        .replace("&gt;", ">")
-        .replace("&lt;", "<")
-    )
+    text = re.sub(r"<[^>]+>", " ", value)
+    text = unescape(text).replace("\u2191", "")  # strip &uarr; sort-arrow glyphs
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -607,10 +601,10 @@ def get_news(*, limit: int | None = None) -> dict:
                 enclosure = enc["href"]
                 break
         items.append({
-            "title": html.unescape(entry.get("title", "")),
+            "title": unescape(entry.get("title", "")),
             "link": entry.get("link", ""),
             "date": entry.get("published", ""),
-            "summary": html.unescape(entry.get("summary", "")),
+            "summary": unescape(entry.get("summary", "")),
             "categories": tags,
             "author": entry.get("author", ""),
             "image": enclosure,
