@@ -372,7 +372,7 @@ def get_team_roster(*, school: str, sport: str = "both") -> dict:
             if isinstance(result, dict):
                 continue
             for athlete in _parse_team_roster(result):
-                key = (athlete["athlete_id"], athlete["name"])
+                key = (athlete["athlete_id"], sp)
                 if key in seen:
                     continue
                 seen.add(key)
